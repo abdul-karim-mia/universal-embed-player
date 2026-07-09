@@ -101,9 +101,19 @@ export function createPlayer(target, options) {
   const wantsLightMode = Boolean(options.light) && resolved;
   const ready = wantsLightMode
     ? new Promise((resolve) => {
+        // The poster click *is* the play action — mount the engine and
+        // start playback immediately so the user doesn't have to click a
+        // second time on the shield/controls. This is also why we always
+        // load the real YouTube IFrame API (see iframe-protocols/youtube.js)
+        // rather than a bare autoplay=1 iframe: Safari/mobile don't reliably
+        // carry the user-gesture association through to a freshly recreated
+        // iframe, but a JS play() call issued right after mount does.
         lightPoster = createLightPoster(container, resolved, options, () => {
           lightPoster = null;
-          mountEngine().then(resolve);
+          mountEngine().then(() => {
+            engine?.play();
+            resolve();
+          });
         });
       })
     : mountEngine();
