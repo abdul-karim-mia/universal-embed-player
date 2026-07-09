@@ -15,13 +15,14 @@ test('youtube: standard watch URL', () => {
   assert.equal(r.id, 'dQw4w9WgXcQ');
   assert.equal(
     r.embedUrl,
-    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?modestbranding=1&rel=0&iv_load_policy=3&cc_load_policy=1&showinfo=0',
+    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?controls=0&modestbranding=1&rel=0&iv_load_policy=3&cc_load_policy=1&showinfo=0',
   );
 });
 
 test('youtube: applies brand-minimization embed params', () => {
   const r = resolveSource('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
   const params = new URL(r.embedUrl).searchParams;
+  assert.equal(params.get('controls'), '0');
   assert.equal(params.get('modestbranding'), '1');
   assert.equal(params.get('rel'), '0');
   assert.equal(params.get('iv_load_policy'), '3');

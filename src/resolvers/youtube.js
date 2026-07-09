@@ -64,6 +64,10 @@ export function resolve(url) {
   const embedUrl = new URL(`https://www.youtube-nocookie.com/embed/${id}`);
   // Brand-minimization params (plan.md §7) — the provider's own embed
   // parameters, not a claim of removing chrome the browser can't reach.
+  // controls=0 is the important one: without it, YouTube renders its own
+  // full native title bar/progress bar/control row *underneath* our custom
+  // Shadow-DOM control bar, producing visible double controls.
+  embedUrl.searchParams.set('controls', '0');
   embedUrl.searchParams.set('modestbranding', '1');
   embedUrl.searchParams.set('rel', '0');
   embedUrl.searchParams.set('iv_load_policy', '3');
