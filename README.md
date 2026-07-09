@@ -1,0 +1,174 @@
+# universal-embed-player
+
+A framework-agnostic, **dependency-free** video embed resolver and player.
+Feed it one URL — YouTube, Vimeo, Google Drive, Dropbox, OneDrive, iCloud,
+HLS, DASH, or a plain MP4 — and it detects the host, resolves the real
+playable source, and mounts a unified player with one API.
+
+```js
+import { createPlayer } from 'universal-embed-player';
+
+createPlayer('#container', { url: 'https://drive.google.com/file/d/XXXX/view' });
+```
+
+No proxy server. No client-side dependency except the two libraries
+(`hls.js`, `dash.js`) that only load when you actually use HLS/DASH.
+
+➡️ **Live demo:** open [`demo.html`](demo.html) with any static server
+(e.g. the VS Code "Live Server" extension) — no build step required.
+
+---
+
+## Why
+
+Every "any URL → embed" tool on npm today either drags in polyfills and
+utility libraries it doesn't need, or delegates each provider to its own
+separate npm package. This one doesn't. See [`plan.md`](plan.md) §0.1–§0.2
+for the competitive research and the reasoning behind the near-zero
+dependency footprint, and [`rules.md`](rules.md) for the engineering rules
+that keep it that way.
+
+## Supported sources
+
+| Category | Providers |
+|---|---|
+| Public social video | YouTube (standard, Shorts, unlisted, live), Vimeo (incl. private-hash links), Dailymotion |
+| Professional hosting | Wistia, Cloudflare Stream |
+| Cloud storage | Google Drive, Dropbox, OneDrive, iCloud (experimental — see caveats below) |
+| Raw infrastructure | HLS (`.m3u8`), DASH (`.mpd`), MP4/WebM/Ogg/MOV |
+
+Mux, Bunny Stream, and Cloudflare Stream's own manifest URLs need no special
+resolver at all — paste the `.m3u8` directly and the generic HLS engine
+handles it (see plan.md §0.1).
+
+## Install
+
+```bash
+npm install universal-embed-player
+```
+
+HLS and DASH support are optional peer dependencies — only install what you
+actually use:
+
+```bash
+npm install hls.js   # only if you'll play .m3u8 sources on non-Safari browsers
+npm install dash.js   # only if you'll play .mpd sources
+```
+
+React and Vue are also optional peer dependencies, needed only if you import
+the framework adapters below.
+
+## Usage
+
+### Vanilla / framework-agnostic
+
+```js
+import { createPlayer } from 'universal-embed-player';
+
+const player = createPlayer('#container', {
+  url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  controls: true,
+  theme: { primaryColor: '#ff0000' },
+  onEvent: (event) => console.log(event.type, event),
+});
+
+await player.ready;       // resolves once the engine has mounted
+player.play();
+player.pause();
+player.seekTo(30);
+player.setVolume(0.5);
+player.setPlaybackRate(1.5);
+player.destroy();
+```
+
+### React
+
+```jsx
+import { Player } from 'universal-embed-player/react';
+
+<Player url={url} controls theme={{ primaryColor: '#ff0000' }} onEvent={handleEvent} />
+```
+
+SSR-safe — the player only mounts client-side (inside `useEffect`); a Next.js
+server render just emits the empty container.
+
+### Vue 3
+
+```vue
+<script setup>
+import { Player } from 'universal-embed-player/vue';
+</script>
+<template>
+  <Player :url="url" controls :theme="{ primaryColor: '#ff0000' }" @event="handleEvent" />
+</template>
+```
+
+### Thumbnail-first ("light") mode
+
+Defers all engine/script loading until the user clicks play — the same
+pattern `lite-youtube-embed` uses:
+
+```js
+createPlayer('#container', { url, light: true });
+```
+
+## API
+
+### `createPlayer(target, options)`
+
+| Option | Type | Default | Notes |
+|---|---|---|---|
+| `url` | `string` | — | required |
+| `controls` | `boolean` | `true` | renders the built-in Shadow-DOM control bar |
+| `light` | `boolean \| string` | `false` | thumbnail-first mode; a string is used as a custom poster URL |
+| `autoplay` / `muted` / `loop` | `boolean` | `false` | |
+| `playbackRates` | `number[]` | `[0.5, 1, 1.5, 2]` | shown in the control bar's rate selector |
+| `volume` | `number` (0–1) | — | overrides `volumeKey`-based persistence |
+| `volumeKey` | `string` | — | persists volume in `localStorage` under this key |
+| `theme` | `{ primaryColor?, accentColor?, fontFamily? }` | — | written as CSS custom properties |
+| `shield` | `boolean` | `true` | interaction shield over controllable iframe sources (YouTube, Vimeo) |
+| `onEvent` | `(event) => void` | — | fires for every unified event type |
+
+Returns `{ play, pause, seekTo, setVolume, setPlaybackRate, on, off, destroy, ready }`.
+
+### `resolveSource(url)`
+
+Pure function: URL in, `{ provider, type, src?, embedUrl?, id?, stability }`
+out (or `null`). Exported alongside `createPlayer` if you just want the URL
+resolution logic without mounting a player.
+
+## Honest constraints (read this before shipping "brand-free" as marketing copy)
+
+- **Native sources (cloud storage, direct MP4/WebM, HLS, DASH) are fully
+  brand-free** — no iframe, no vendor chrome, by construction.
+- **iframe sources (YouTube, Vimeo, Wistia) are "brand-minimized," not
+  "brand-free."** Cross-origin iframes can't have their internal DOM
+  stripped — same-origin policy blocks it categorically. The interaction
+  shield only intercepts clicks and forwards real commands via each
+  provider's documented postMessage protocol; it's only mounted where a
+  protocol adapter exists (currently YouTube and Vimeo). Full details in
+  [`plan.md`](plan.md) §7.
+- **Google Drive / Dropbox / OneDrive** resolvers are simple, documented URL
+  rewrites and can break if a provider changes its URL scheme.
+- **iCloud is experimental.** Its share links usually require a JS-executed
+  API call to resolve to a real asset URL, not a static redirect — this is
+  the resolver most likely to fail. See plan.md §8 and §13.
+
+## Development
+
+```bash
+npm test          # runs the full suite via Node's built-in test runner (zero test-framework dependency)
+```
+
+All resolver/controller/engine code lives under [`src/`](src/); see
+[`rules.md`](rules.md) for the file-layout and contribution rules (one
+provider per file, pure resolver functions, dependency ceiling, etc.).
+
+## Project docs
+
+- [`plan.md`](plan.md) — architecture, provider matrix, milestones, competitive research
+- [`rules.md`](rules.md) — engineering rules this repo is held to
+
+## License
+
+MIT

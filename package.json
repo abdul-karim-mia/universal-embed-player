@@ -1,0 +1,66 @@
+{
+  "name": "universal-embed-player",
+  "version": "0.1.0",
+  "description": "Framework-agnostic, dependency-free video embed resolver: one URL from any host (YouTube, Vimeo, Google Drive, Dropbox, OneDrive, HLS, DASH...) in, one unified player out.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./resolvers/*": "./src/resolvers/*.js",
+    "./react": "./src/react/index.js",
+    "./vue": "./src/vue/index.js"
+  },
+  "sideEffects": false,
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test tests/all.test.js"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "hls.js": ">=1.5.0",
+    "dash.js": ">=4.7.0",
+    "react": ">=18.0.0",
+    "vue": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "hls.js": {
+      "optional": true
+    },
+    "dash.js": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abdul-karim-mia/universal-embed-player.git"
+  },
+  "homepage": "https://github.com/abdul-karim-mia/universal-embed-player#readme",
+  "bugs": {
+    "url": "https://github.com/abdul-karim-mia/universal-embed-player/issues"
+  },
+  "author": "abdul-karim-mia",
+  "keywords": [
+    "video",
+    "player",
+    "embed",
+    "youtube",
+    "vimeo",
+    "hls",
+    "dash",
+    "google-drive",
+    "dropbox",
+    "onedrive"
+  ]
+}

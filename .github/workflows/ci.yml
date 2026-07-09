@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - run: npm test
+
+      - name: Enforce zero-dependency ceiling (rules.md §1a)
+        run: |
+          DEP_COUNT=$(node -e "console.log(Object.keys(require('./package.json').dependencies || {}).length)")
+          if [ "$DEP_COUNT" -ne 0 ]; then
+            echo "package.json 'dependencies' must stay empty — found $DEP_COUNT entries. See rules.md §1a."
+            exit 1
+          fi
