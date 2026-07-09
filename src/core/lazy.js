@@ -28,7 +28,7 @@ const PROVIDER_POSTERS = {
     return null;
   },
   hls: (id, resolved) => {
-    if (resolved?.src?.includes('/img_bipbop_adv_example_fmp4/')) {
+    if (resolved?.src?.includes('/img_bipbop_adv_example_fmp4/') || resolved?.src?.includes('/x36xhqq/')) {
       return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80';
     }
     return null;
@@ -202,12 +202,19 @@ export function createLightPoster(container, resolved, options, onActivate) {
     if (gs.speed)  poster.style.setProperty('--uep-glow-speed',   gs.speed);
   }
 
+  const sizeMap = {
+    cover: 'cover',
+    contain: 'contain',
+    fill: '100% 100%',
+  };
+  const bgSize = sizeMap[options.videoSize] || 'cover';
+
   Object.assign(poster.style, {
     position: 'absolute',
     inset: '0',
     backgroundColor: useGlow ? 'transparent' : '#000',
     backgroundImage: image ? `url("${image}")` : 'none',
-    backgroundSize: 'cover',
+    backgroundSize: bgSize,
     backgroundPosition: 'center',
     cursor: 'pointer',
   });

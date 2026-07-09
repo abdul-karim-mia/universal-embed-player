@@ -13,18 +13,29 @@ export async function createHlsEngine(container, resolvedSource, options, emitte
   const detachEvents = attachMediaElementEvents(video, emitter, 'hls', options);
 
   let hlsInstance = null;
+  let HlsCtor = null;
+  try {
+    const mod = await import('hls.js');
+    HlsCtor = mod.default;
+  } catch {
+    // hls.js optional peer dependency not installed or failed to load
+  }
+
+  const isSafari = typeof navigator !== 'undefined' && 
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const canPlayNatively = video.canPlayType('application/vnd.apple.mpegurl') !== '';
 
-  if (canPlayNatively) {
+  // We only play natively on Safari where HLS is supported natively by the OS,
+  // or as a fallback if hls.js cannot be loaded.
+  const preferNative = canPlayNatively && (isSafari || !HlsCtor || !HlsCtor.isSupported());
+
+  if (preferNative) {
     video.src = resolvedSource.src;
   } else {
-    let HlsCtor;
-    try {
-      ({ default: HlsCtor } = await import('hls.js'));
-    } catch {
+    if (!HlsCtor) {
       emitHlsDependencyError(emitter);
       container.append(video);
-      return { ...createMediaControls(video), destroy: () => finalize(video, detachEvents, null) };
+      return { ...createMediaControls(video, emitter, 'hls'), destroy: () => finalize(video, detachEvents, null) };
     }
 
     if (!HlsCtor.isSupported()) {
@@ -34,7 +45,7 @@ export async function createHlsEngine(container, resolvedSource, options, emitte
         provider: 'hls',
       });
       container.append(video);
-      return { ...createMediaControls(video), destroy: () => finalize(video, detachEvents, null) };
+      return { ...createMediaControls(video, emitter, 'hls'), destroy: () => finalize(video, detachEvents, null) };
     }
 
     hlsInstance = new HlsCtor();
@@ -53,7 +64,7 @@ export async function createHlsEngine(container, resolvedSource, options, emitte
   container.append(video);
 
   return {
-    ...createMediaControls(video),
+    ...createMediaControls(video, emitter, 'hls'),
     destroy: () => finalize(video, detachEvents, hlsInstance),
   };
 }

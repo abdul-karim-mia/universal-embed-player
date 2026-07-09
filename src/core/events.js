@@ -19,7 +19,13 @@ export class UnifiedEventEmitter {
 
   on(type, handler) {
     if (!VALID_TYPES.has(type)) {
-      throw new Error(`Unknown event type: ${type}`);
+      // Warn rather than throw — a bad event name shouldn't crash caller code.
+      console.warn(`[uep] Unknown event type "${type}" — valid types: ${[...VALID_TYPES].join(', ')}`);
+      return () => {}; // no-op unsubscriber
+    }
+    if (typeof handler !== 'function') {
+      console.warn(`[uep] event handler for "${type}" must be a function`);
+      return () => {};
     }
     if (!this.#listeners.has(type)) this.#listeners.set(type, new Set());
     this.#listeners.get(type).add(handler);
@@ -33,7 +39,12 @@ export class UnifiedEventEmitter {
   emit(type, payload = {}) {
     const event = { type, ...payload };
     for (const handler of this.#listeners.get(type) ?? []) {
-      handler(event);
+      try {
+        handler(event);
+      } catch (err) {
+        // One bad handler must not silence the rest.
+        console.error(`[uep] Uncaught error in "${type}" handler:`, err);
+      }
     }
     return event;
   }

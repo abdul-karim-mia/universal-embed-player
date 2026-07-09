@@ -21,7 +21,7 @@ export async function createDashEngine(container, resolvedSource, options, emitt
       provider: 'dash',
     });
     container.append(video);
-    return { ...createMediaControls(video), destroy: () => finalize(video, detachEvents, null) };
+    return { ...createMediaControls(video, emitter, 'dash'), destroy: () => finalize(video, detachEvents, null) };
   }
 
   const player = dashModule.MediaPlayer().create();
@@ -37,7 +37,7 @@ export async function createDashEngine(container, resolvedSource, options, emitt
   container.append(video);
 
   return {
-    ...createMediaControls(video),
+    ...createMediaControls(video, emitter, 'dash'),
     destroy: () => finalize(video, detachEvents, player),
   };
 }

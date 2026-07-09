@@ -12,14 +12,35 @@
 // by a volume button that opens a small vertical-slider popup, since a
 // full-width horizontal slider doesn't fit a narrow/thumbnail-sized player.
 const ICONS = {
-  play: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
-  pause: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+  // Material Design "play_arrow" — rounded triangle
+  play:
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+
+  // Material Design "pause" — two solid bars
+  pause:
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
+
+  // Material Design "volume_up" — speaker body + small arc + large arc
   volume:
-    '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.06c1.48-.74 2.5-2.26 2.5-4.03z"/></svg>',
-  chevron: '<svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>',
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>',
+
+  // Speaker body + filled × mark — pure fill, no stroke
+  volumeMuted:
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M21 8.8l-.8-.8-3.2 3.2-3.2-3.2-.8.8 3.2 3.2-3.2 3.2.8.8 3.2-3.2 3.2 3.2.8-.8-3.2-3.2z"/></svg>',
+
+  // Material Design "expand_more" — filled downward chevron
+  chevron:
+    '<svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>',
+
+  // Material Design "fullscreen" — four L-shaped corner arrows
   fullscreen:
-    '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm16 0v6h-6v-2h4v-4h2z"/></svg>',
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
+
+  // Material Design "fullscreen_exit" — four inward L-shaped arrows
+  fullscreenExit:
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>',
 };
+
 
 const NARROW_BREAKPOINT_PX = 320;
 const IDLE_HIDE_MS = 2500;
@@ -84,6 +105,11 @@ export function createControls(container, engine, emitter, options) {
         padding: 5px;
         border-radius: 999px;
         line-height: 0;
+        transition: color 0.15s ease, opacity 0.15s ease;
+      }
+      button[data-muted] {
+        color: #ff6b6b;
+        opacity: 0.9;
       }
       button[data-action='toggle'] {
         background: var(--uep-primary-color, #6d5efc);
@@ -300,8 +326,18 @@ export function createControls(container, engine, emitter, options) {
   let isPlaying = false;
   let isScrubbing = false;
   let isHoveringBar = false;
+  let isMuted = false;
+  let preMuteVolume = 1; // level to restore on unmute
   let lastDuration = 0;
   let hideTimer = null;
+
+  // ── Mute icon helpers ──────────────────────────────────────────────────
+  const syncMuteIcon = (muted) => {
+    isMuted = muted;
+    volumeButton.innerHTML = muted ? ICONS.volumeMuted : ICONS.volume;
+    volumeButton.setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
+    volumeButton.toggleAttribute('data-muted', muted);
+  };
 
   const hasOpenPopup = () => volumePopup.classList.contains('open') || ratePopup.classList.contains('open');
 
@@ -336,15 +372,32 @@ export function createControls(container, engine, emitter, options) {
   };
   const onVolumeInput = (event) => {
     const value = Number(event.target.value);
+    // Sync all sliders visually first
     for (const slider of volumeSliders) slider.value = String(value);
+    // Dragging slider up from 0 while muted → auto-unmute
+    if (value > 0 && isMuted) {
+      isMuted = false;
+      syncMuteIcon(false);
+    }
     engine.setVolume(value);
   };
   const onVolumeToggleClick = () => {
-    ratePopup.classList.remove('open');
-    rateButton.removeAttribute('data-open');
-    const willOpen = !volumePopup.classList.contains('open');
-    volumePopup.classList.toggle('open', willOpen);
-    volumeButton.toggleAttribute('data-open', willOpen);
+    const willMute = !isMuted;
+    if (willMute) {
+      // 1. Snapshot current slider value BEFORE anything changes the slider
+      preMuteVolume = Number(volumeSliders[0]?.value) || 1;
+      // 2. Update icon state
+      syncMuteIcon(true);
+      // 3. Tell engine (fires volumechange, but we won't move the slider)
+      engine.setVolume(0);
+    } else {
+      // 1. Update icon state
+      syncMuteIcon(false);
+      // 2. Restore slider visually
+      for (const slider of volumeSliders) slider.value = String(preMuteVolume);
+      // 3. Tell engine
+      engine.setVolume(preMuteVolume);
+    }
   };
   const onRateToggleClick = () => {
     volumePopup.classList.remove('open');
@@ -364,14 +417,16 @@ export function createControls(container, engine, emitter, options) {
   };
   const onOutsideClick = (event) => {
     const path = event.composedPath();
-    if (!path.includes(volumeButton) && !path.includes(volumePopup)) {
-      volumePopup.classList.remove('open');
-      volumeButton.removeAttribute('data-open');
-    }
+    // Volume popup no longer opens — only rate popup needs outside-click dismissal
     if (!path.includes(rateButton) && !path.includes(ratePopup)) {
       ratePopup.classList.remove('open');
       rateButton.removeAttribute('data-open');
     }
+  };
+  const syncFullscreenIcon = () => {
+    const isFs = !!document.fullscreenElement;
+    fullscreenButton.innerHTML = isFs ? ICONS.fullscreenExit : ICONS.fullscreen;
+    fullscreenButton.setAttribute('aria-label', isFs ? 'Exit fullscreen' : 'Fullscreen');
   };
   const onFullscreenClick = () => {
     if (document.fullscreenElement) {
@@ -390,6 +445,7 @@ export function createControls(container, engine, emitter, options) {
   for (const option of rateOptions) option.addEventListener('click', onRateOptionClick);
   document.addEventListener('click', onOutsideClick);
   fullscreenButton.addEventListener('click', onFullscreenClick);
+  document.addEventListener('fullscreenchange', syncFullscreenIcon);
   container.addEventListener('pointermove', revealBar);
   container.addEventListener('pointerdown', revealBar);
   host.addEventListener('mouseenter', onBarMouseEnter);
@@ -424,13 +480,25 @@ export function createControls(container, engine, emitter, options) {
       timeEl.textContent = `-${formatTime(duration - currentTime)}`;
     }),
     emitter.on('volumechange', ({ volume: currentVolume }) => {
-      for (const slider of volumeSliders) slider.value = String(currentVolume);
+      // Only update the sliders here. Mute icon state is exclusively owned by
+      // syncMuteIcon() — driven by button click, slider drag, or
+      // controls.setMuted() from the player API.
+      // We do NOT use the engine's `muted` field here because our mute
+      // implementation sets volume=0 rather than video.muted=true, so the
+      // native element always reports muted:false even when we're "muted".
+      if (!isMuted) {
+        for (const slider of volumeSliders) slider.value = String(currentVolume);
+      }
     }),
   ];
 
   container.append(host);
 
   return {
+    /** Returns true if the control bar is currently in the muted state. */
+    getMuteState: () => isMuted,
+    /** Sync mute icon when mute state is changed via the player API. */
+    setMuted: (muted) => syncMuteIcon(muted),
     destroy: () => {
       playButton.removeEventListener('click', onPlayClick);
       progress.removeEventListener('pointerdown', onProgressPointerDown);
@@ -441,6 +509,7 @@ export function createControls(container, engine, emitter, options) {
       for (const option of rateOptions) option.removeEventListener('click', onRateOptionClick);
       document.removeEventListener('click', onOutsideClick);
       fullscreenButton.removeEventListener('click', onFullscreenClick);
+      document.removeEventListener('fullscreenchange', syncFullscreenIcon);
       container.removeEventListener('pointermove', revealBar);
       container.removeEventListener('pointerdown', revealBar);
       host.removeEventListener('mouseenter', onBarMouseEnter);

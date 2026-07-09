@@ -16,7 +16,7 @@ export function createNativeEngine(container, resolvedSource, options, emitter) 
   container.append(video);
 
   return {
-    ...createMediaControls(video),
+    ...createMediaControls(video, emitter, resolvedSource.provider),
     destroy: () => {
       detachEvents();
       video.pause();

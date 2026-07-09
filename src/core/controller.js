@@ -10,6 +10,7 @@ import { createDashEngine } from './engines/dash.js';
 import { createIframeEngine } from './engines/iframe.js';
 import { createShield } from './ui/shield.js';
 import { createControls } from './ui/controls.js';
+import { createCenterPlayButton } from './ui/center-play.js';
 import { createLightPoster } from './lazy.js';
 import { applyTheme } from './ui/theme.js';
 import { resolveViaIframely } from './iframely-fallback.js';
@@ -63,65 +64,95 @@ export function createPlayer(target, options) {
   // (unresolved URLs already skip light mode, unaffected by this change).
   let resolved = resolveSource(options.url);
 
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
   let engine = null;
   let shield = null;
   let controls = null;
+  let centerPlayButton = null;
   let lightPoster = null;
   let destroyed = false;
+  let lastVolume = clamp(options.volume ?? 1, 0, 1);
+  let muteState = false;
+  let currentVideoSize = options.videoSize || 'contain';
+
+  // Sync lastVolume with any volume changes (e.g. from the UI slider or API calls)
+  // so that unmute/toggle restores the correct pre-mute volume level.
+  emitter.on('volumechange', ({ volume }) => {
+    if (typeof volume === 'number' && Number.isFinite(volume) && volume > 0) {
+      lastVolume = volume;
+    }
+  });
 
   async function mountEngine() {
-    if (!resolved && options.iframelyKey) {
-      resolved = await resolveViaIframely(options.url, options.iframelyKey);
-      if (destroyed) return;
-    }
-
-    if (!resolved) {
-      emitter.emit('error', {
-        code: 'UNSUPPORTED_SOURCE',
-        message: `Could not resolve a player for this URL: ${options.url}`,
-        provider: 'unknown',
-      });
-      return;
-    }
-
-    if (resolved.provider === 'dailymotion' && resolved.type === 'iframe') {
-      const hlsUrl = await fetchDailymotionHlsUrl(resolved.id);
-      if (hlsUrl) {
-        resolved = {
-          provider: 'dailymotion',
-          type: 'hls',
-          src: hlsUrl,
-          id: resolved.id,
-          stability: 'stable',
-        };
+    try {
+      if (!resolved && options.iframelyKey) {
+        resolved = await resolveViaIframely(options.url, options.iframelyKey);
+        if (destroyed) return;
       }
-    }
 
-    if (resolved.type === 'native') {
-      engine = createNativeEngine(container, resolved, options, emitter);
-    } else if (resolved.type === 'hls') {
-      engine = await createHlsEngine(container, resolved, options, emitter);
-    } else if (resolved.type === 'dash') {
-      engine = await createDashEngine(container, resolved, options, emitter);
-    } else if (resolved.type === 'iframe') {
-      engine = await createIframeEngine(container, resolved, options, emitter);
-    }
+      if (!resolved) {
+        emitter.emit('error', {
+          code: 'UNSUPPORTED_SOURCE',
+          message: `Could not resolve a player for this URL: ${options.url}`,
+          provider: 'unknown',
+        });
+        return;
+      }
 
-    // The async hls/dash import may resolve after destroy() was already called.
-    if (destroyed) {
-      engine?.destroy();
-      engine = null;
-      return;
-    }
+      if (resolved.provider === 'dailymotion' && resolved.type === 'iframe') {
+        const hlsUrl = await fetchDailymotionHlsUrl(resolved.id);
+        if (hlsUrl) {
+          resolved = {
+            provider: 'dailymotion',
+            type: 'hls',
+            src: hlsUrl,
+            id: resolved.id,
+            stability: 'stable',
+          };
+        }
+      }
 
-    if (options.shield !== false && engine?.controllable) {
-      shield = createShield(container, engine);
-      emitter.on('play', () => shield.setPlaying(true));
-      emitter.on('pause', () => shield.setPlaying(false));
-    }
+      if (resolved.type === 'native') {
+        engine = createNativeEngine(container, resolved, options, emitter);
+      } else if (resolved.type === 'hls') {
+        engine = await createHlsEngine(container, resolved, options, emitter);
+      } else if (resolved.type === 'dash') {
+        engine = await createDashEngine(container, resolved, options, emitter);
+      } else if (resolved.type === 'iframe') {
+        engine = await createIframeEngine(container, resolved, options, emitter);
+      }
 
-    if (options.controls !== false && engine?.controllable) {
-      controls = createControls(container, engine, emitter, options);
+      if (engine?.mediaElement) {
+        engine.mediaElement.style.objectFit = currentVideoSize;
+      }
+
+      // The async hls/dash import may resolve after destroy() was already called.
+      if (destroyed) {
+        engine?.destroy();
+        engine = null;
+        return;
+      }
+
+      if (options.shield !== false && engine?.controllable) {
+        shield = createShield(container, engine);
+        emitter.on('play', () => shield.setPlaying(true));
+        emitter.on('pause', () => shield.setPlaying(false));
+      }
+
+      if (options.controls !== false && engine?.controllable) {
+        controls = createControls(container, engine, emitter, options);
+      }
+
+      if (options.centerPlayButton === true && engine?.controllable) {
+        centerPlayButton = createCenterPlayButton(container, engine, emitter, options);
+      }
+    } catch (err) {
+      emitter.emit('error', {
+        code: 'ENGINE_INIT_FAILED',
+        message: err?.message ?? 'Failed to initialise the player engine',
+        provider: resolved?.provider ?? 'unknown',
+      });
     }
   }
 
@@ -145,23 +176,178 @@ export function createPlayer(target, options) {
       })
     : mountEngine();
 
-  /** @type {import('./types.js').UepPlayer} */
+
+
+  // applyMute is race-safe: if engine is not yet mounted, muteState and the
+  // controls icon are still updated correctly; the actual setVolume(0/restore)
+  // fires when engine is available (engine?.setVolume uses optional-chaining).
+  // Always reads the REAL current state from controls (which owns the UI) when
+  // controls is mounted, falling back to muteState before that.
+  const getCurrentMuteState = () => (controls ? controls.getMuteState() : muteState);
+
+  const applyMute = (mute) => {
+    if (mute === getCurrentMuteState()) return; // idempotent — already in right state
+    muteState = mute;
+    // Sync icon BEFORE setVolume so controls see correct state when the
+    // resulting volumechange event fires.
+    controls?.setMuted(mute);
+    try {
+      engine?.setVolume(mute ? 0 : lastVolume);
+    } catch (err) {
+      // Roll back state if the engine call fails.
+      const prev = !mute;
+      muteState = prev;
+      controls?.setMuted(prev);
+      console.error('[uep] applyMute failed:', err);
+    }
+  };
+
   const player = {
-    play: () => engine?.play(),
-    pause: () => engine?.pause(),
-    seekTo: (seconds) => engine?.seekTo(seconds),
-    setVolume: (volume) => engine?.setVolume(volume),
-    setPlaybackRate: (rate) => engine?.setPlaybackRate(rate),
-    on: (type, handler) => emitter.on(type, handler),
+    /** Start playback. Catches autoplay-policy rejections and re-emits as 'error'. */
+    play: () => {
+      try {
+        const p = engine?.play();
+        if (p instanceof Promise) {
+          p.catch((err) =>
+            emitter.emit('error', {
+              code: 'PLAY_REJECTED',
+              message: err?.message ?? 'play() was rejected',
+              provider: resolved?.provider ?? 'unknown',
+            }),
+          );
+        }
+      } catch (err) {
+        emitter.emit('error', {
+          code: 'PLAY_FAILED',
+          message: err?.message ?? 'play() threw an error',
+          provider: resolved?.provider ?? 'unknown',
+        });
+      }
+    },
+
+    pause: () => {
+      try {
+        engine?.pause();
+      } catch (err) {
+        console.error('[uep] pause() failed:', err);
+      }
+    },
+
+    /**
+     * Seek to a position in seconds.
+     * Silently clamps to [0, ∞) and ignores non-finite values.
+     */
+    seekTo: (seconds) => {
+      if (typeof seconds !== 'number' || !Number.isFinite(seconds)) {
+        console.warn(`[uep] seekTo(${seconds}): expected a finite number — ignored`);
+        return;
+      }
+      try {
+        engine?.seekTo(Math.max(0, seconds));
+      } catch (err) {
+        console.error('[uep] seekTo() failed:', err);
+      }
+    },
+
+    /**
+     * Set volume in [0, 1]. Non-finite or out-of-range values are clamped.
+     * Passing volume > 0 while muted automatically unmutes.
+     */
+    setVolume: (volume) => {
+      if (typeof volume !== 'number' || !Number.isFinite(volume)) {
+        console.warn(`[uep] setVolume(${volume}): expected a finite number in [0,1] — ignored`);
+        return;
+      }
+      const v = clamp(volume, 0, 1);
+      if (v > 0) lastVolume = v; // keep lastVolume up to date for unmute
+      if (v > 0 && muteState) {
+        muteState = false;
+        controls?.setMuted(false);
+      }
+      try {
+        engine?.setVolume(v);
+      } catch (err) {
+        console.error('[uep] setVolume() failed:', err);
+      }
+    },
+
+    /**
+     * Set playback rate. Clamped to [0.0625, 16] (browser-safe range).
+     * Non-positive or non-finite values are rejected.
+     */
+    setPlaybackRate: (rate) => {
+      if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0) {
+        console.warn(`[uep] setPlaybackRate(${rate}): expected a positive finite number — ignored`);
+        return;
+      }
+      try {
+        engine?.setPlaybackRate(clamp(rate, 0.0625, 16));
+      } catch (err) {
+        console.error('[uep] setPlaybackRate() failed:', err);
+      }
+    },
+
+    /**
+     * Set video display size styling.
+     * @param {'cover' | 'contain' | 'fill'} size
+     */
+    setVideoSize: (size) => {
+      const valid = ['cover', 'contain', 'fill'];
+      if (!valid.includes(size)) {
+        console.warn(`[uep] setVideoSize("${size}"): expected 'cover', 'contain', or 'fill' — ignored`);
+        return;
+      }
+      currentVideoSize = size;
+      if (engine?.mediaElement) {
+        engine.mediaElement.style.objectFit = size;
+      }
+    },
+
+    /** Mute audio. Idempotent — calling when already muted is a no-op. */
+    mute: () => applyMute(true),
+
+    /** Unmute audio, restoring the pre-mute volume. Idempotent. */
+    unmute: () => applyMute(false),
+
+    /** Toggle between muted and unmuted. */
+    toggleMute: () => applyMute(!getCurrentMuteState()),
+
+    /**
+     * Subscribe to a player event. Returns an unsubscribe function.
+     * Unknown event types produce a console.warn and return a no-op unsubscriber
+     * rather than throwing.
+     */
+    on: (type, handler) => {
+      try {
+        return emitter.on(type, handler);
+      } catch (err) {
+        console.warn(`[uep] on("${type}") failed:`, err);
+        return () => {};
+      }
+    },
+
     off: (type, handler) => emitter.off(type, handler),
+
+    /**
+     * Tear down the player. Idempotent — safe to call multiple times.
+     */
     destroy: () => {
+      if (destroyed) return; // guard double-destroy
       destroyed = true;
       controls?.destroy();
       shield?.destroy();
+      centerPlayButton?.destroy();
       lightPoster?.destroy();
       engine?.destroy();
       emitter.removeAllListeners();
+      // Null refs so nothing holds GC-preventing references.
+      controls = null;
+      shield = null;
+      centerPlayButton = null;
+      engine = null;
+      lightPoster = null;
     },
+
     ready,
   };
   return player;
@@ -176,6 +362,10 @@ function createNoopPlayer() {
     seekTo: noop,
     setVolume: noop,
     setPlaybackRate: noop,
+    setVideoSize: noop,
+    mute: noop,
+    unmute: noop,
+    toggleMute: noop,
     on: noop,
     off: noop,
     destroy: noop,

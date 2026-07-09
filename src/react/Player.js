@@ -16,6 +16,8 @@ const PLAYER_OPTION_KEYS = [
   'playbackRates',
   'volume',
   'volumeKey',
+  'videoSize',
+  'centerPlayButton',
   'theme',
   'shield',
   'onEvent',
