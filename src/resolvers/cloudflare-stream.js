@@ -1,16 +1,7 @@
-// Embed parameter reference: https://developers.cloudflare.com/stream/viewing-videos/using-the-player-api/
-// Handles the iframe.cloudflarestream.com/<uid> and watch.cloudflarestream.com/<uid>
-// dashboard/share URL shapes. A direct .../manifest/video.m3u8 URL is NOT handled
-// here — that's a plain HLS manifest and is already covered by resolvers/direct.js
-// per the research finding in plan.md §0.1 (Mux/Cloudflare/Bunny all reduce to a
-// generic .m3u8, no bespoke engine needed for the direct-manifest case).
-const CF_STREAM_HOST_RE = /^(?:iframe|watch)\.cloudflarestream\.com$/;
-const CF_STREAM_ID_RE = /^[a-zA-Z0-9]+$/;
+const CF_SHORT_HOST_RE = /^(?:iframe|watch)\.(?:cloudflarestream|videodelivery)\.com$/;
+const CF_CUSTOMER_HOST_RE = /^customer-([a-z0-9]+)\.(?:cloudflarestream|videodelivery)\.com$/;
+const CF_ID_RE = /^[a-zA-Z0-9]+$/;
 
-/**
- * @param {string} url
- * @returns {import('../core/types.js').ResolvedSource | null}
- */
 export function resolve(url) {
   let parsed;
   try {
@@ -19,10 +10,33 @@ export function resolve(url) {
     return null;
   }
 
-  if (!CF_STREAM_HOST_RE.test(parsed.hostname)) return null;
+  const host = parsed.hostname;
+
+  // Don't claim direct manifest URLs (ends with .m3u8 or .mpd) —
+  // let the generic HLS/DASH resolvers handle those.
+  if (/\.(m3u8|mpd)$/i.test(parsed.pathname)) return null;
+
+  // customer-{CODE}.cloudflarestream.com/{UID}/iframe → HLS manifest
+  const customerMatch = host.match(CF_CUSTOMER_HOST_RE);
+  if (customerMatch) {
+    const code = customerMatch[1];
+    const id = parsed.pathname.split('/').filter(Boolean)[0];
+    if (id && CF_ID_RE.test(id)) {
+      return {
+        provider: 'cloudflare-stream',
+        type: 'hls',
+        id,
+        src: `https://customer-${code}.cloudflarestream.com/${id}/manifest/video.m3u8`,
+        stability: 'stable',
+      };
+    }
+  }
+
+  // iframe.cloudflarestream.com/{UID} or watch.cloudflarestream.com/{UID}
+  if (!CF_SHORT_HOST_RE.test(host)) return null;
 
   const id = parsed.pathname.split('/').filter(Boolean)[0];
-  if (!id || !CF_STREAM_ID_RE.test(id)) return null;
+  if (!id || !CF_ID_RE.test(id)) return null;
 
   return {
     provider: 'cloudflare-stream',

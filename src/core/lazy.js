@@ -12,6 +12,7 @@
 const PROVIDER_POSTERS = {
   youtube: (id) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
   dailymotion: (id) => `https://www.dailymotion.com/thumbnail/video/${id}`,
+  fastpix: (id) => `https://images.fastpix.com/${id}/thumbnail.jpg?time=1`,
 };
 
 // Vimeo thumbnails are hash-named CDN URLs, not derivable from the video ID

@@ -12,6 +12,8 @@ import { createShield } from './ui/shield.js';
 import { createControls } from './ui/controls.js';
 import { createLightPoster } from './lazy.js';
 import { applyTheme } from './ui/theme.js';
+import { resolveViaIframely } from './iframely-fallback.js';
+import { fetchDailymotionHlsUrl } from './dailymotion-metadata.js';
 
 const EVENT_TYPES = [
   'ready',
@@ -52,14 +54,14 @@ export function createPlayer(target, options) {
     for (const type of EVENT_TYPES) emitter.on(type, options.onEvent);
   }
 
-  const resolved = resolveSource(options.url);
-  if (!resolved) {
-    emitter.emit('error', {
-      code: 'UNSUPPORTED_SOURCE',
-      message: `Could not resolve a player for this URL: ${options.url}`,
-      provider: 'unknown',
-    });
-  }
+  // `resolved` stays a `let`: the synchronous built-in resolvers set it
+  // immediately (unchanged from before), but mountEngine() below may still
+  // fill it in asynchronously via the opt-in Iframely last resort. Reading
+  // `resolved` before mountEngine() runs (e.g. `wantsLightMode` just below)
+  // only ever sees the synchronous result — light mode + Iframely fallback
+  // together isn't supported, matching the existing light-mode contract
+  // (unresolved URLs already skip light mode, unaffected by this change).
+  let resolved = resolveSource(options.url);
 
   let engine = null;
   let shield = null;
@@ -68,7 +70,32 @@ export function createPlayer(target, options) {
   let destroyed = false;
 
   async function mountEngine() {
-    if (!resolved) return;
+    if (!resolved && options.iframelyKey) {
+      resolved = await resolveViaIframely(options.url, options.iframelyKey);
+      if (destroyed) return;
+    }
+
+    if (!resolved) {
+      emitter.emit('error', {
+        code: 'UNSUPPORTED_SOURCE',
+        message: `Could not resolve a player for this URL: ${options.url}`,
+        provider: 'unknown',
+      });
+      return;
+    }
+
+    if (resolved.provider === 'dailymotion' && resolved.type === 'iframe') {
+      const hlsUrl = await fetchDailymotionHlsUrl(resolved.id);
+      if (hlsUrl) {
+        resolved = {
+          provider: 'dailymotion',
+          type: 'hls',
+          src: hlsUrl,
+          id: resolved.id,
+          stability: 'stable',
+        };
+      }
+    }
 
     if (resolved.type === 'native') {
       engine = createNativeEngine(container, resolved, options, emitter);

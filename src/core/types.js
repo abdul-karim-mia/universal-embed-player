@@ -44,6 +44,7 @@
  * @property {string} [volumeKey]
  * @property {PlayerTheme} [theme]
  * @property {boolean} [shield]
+ * @property {string} [iframelyKey] - opt-in last-resort fallback (core/iframely-fallback.js): only tried when every built-in resolver returns null. Must be Iframely's client-safe hashed key (iframely.com/docs/allow-origins), never a raw private API key — this package never bundles Iframely credentials of its own (rules.md §7.3).
  * @property {(event: UnifiedPlayerEvent) => void} [onEvent]
  */
 

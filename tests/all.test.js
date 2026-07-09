@@ -139,7 +139,7 @@ test('dailymotion: standard video URL with slug', () => {
   assert.equal(r.provider, 'dailymotion');
   assert.equal(r.type, 'iframe');
   assert.equal(r.id, 'x7tgd2y');
-  assert.equal(r.embedUrl, 'https://www.dailymotion.com/embed/video/x7tgd2y');
+  assert.equal(r.embedUrl, 'https://geo.dailymotion.com/player.html?video=x7tgd2y');
 });
 
 test('dailymotion: dai.ly short link', () => {
@@ -167,7 +167,16 @@ test('wistia: wi.st short link', () => {
 // ---------------------------------------------------------------------------
 // Cloudflare Stream
 // ---------------------------------------------------------------------------
-test('cloudflare stream: iframe share URL', () => {
+test('cloudflare stream: customer-code embed URL resolves to HLS', () => {
+  const uid = '6b9e68b07dfee8cc2d116e4c51d6a957';
+  const r = resolveSource(`https://customer-f33zs165nr7gyfy4.cloudflarestream.com/${uid}/iframe`);
+  assert.equal(r.provider, 'cloudflare-stream');
+  assert.equal(r.type, 'hls');
+  assert.equal(r.id, uid);
+  assert.ok(r.src.includes('/manifest/video.m3u8'));
+});
+
+test('cloudflare stream: short iframe URL resolved as iframe (fallback)', () => {
   const id = 'e1c94a8a8f0d4e8f8b8b8b8b8b8b8b8b';
   const r = resolveSource(`https://iframe.cloudflarestream.com/${id}`);
   assert.equal(r.provider, 'cloudflare-stream');
@@ -175,7 +184,7 @@ test('cloudflare stream: iframe share URL', () => {
   assert.equal(r.id, id);
 });
 
-test('cloudflare stream: direct .m3u8 manifest URL is handled by the generic HLS resolver, not this one', () => {
+test('cloudflare stream: direct .m3u8 manifest URL is handled by the generic HLS resolver', () => {
   const r = resolveSource('https://customer-abc123.cloudflarestream.com/xyz/manifest/video.m3u8');
   assert.equal(r.provider, 'hls');
   assert.equal(r.type, 'hls');
@@ -184,14 +193,25 @@ test('cloudflare stream: direct .m3u8 manifest URL is handled by the generic HLS
 // ---------------------------------------------------------------------------
 // FastPix
 // ---------------------------------------------------------------------------
-test('fastpix: play.fastpix.io dashboard/share URL', () => {
-  const r = resolveSource('https://play.fastpix.io/?playbackId=abc123-def456');
+test('fastpix: play.fastpix.io resolves to HLS', () => {
+  const id = 'abc123-def456';
+  const r = resolveSource(`https://play.fastpix.io/?playbackId=${id}`);
   assert.equal(r.provider, 'fastpix');
-  assert.equal(r.type, 'iframe');
-  assert.equal(r.id, 'abc123-def456');
+  assert.equal(r.type, 'hls');
+  assert.equal(r.id, id);
+  assert.equal(r.src, `https://stream.fastpix.io/${id}.m3u8`);
 });
 
-test('fastpix: direct .m3u8 stream URL is handled by the generic HLS resolver, not this one', () => {
+test('fastpix: play.fastpix.com also resolves to HLS', () => {
+  const id = 'xyz789';
+  const r = resolveSource(`https://play.fastpix.com/?playbackId=${id}`);
+  assert.equal(r.provider, 'fastpix');
+  assert.equal(r.type, 'hls');
+  assert.equal(r.id, id);
+  assert.equal(r.src, `https://stream.fastpix.io/${id}.m3u8`);
+});
+
+test('fastpix: direct .m3u8 stream URL goes to generic HLS resolver', () => {
   const r = resolveSource('https://stream.fastpix.io/abc123-def456.m3u8');
   assert.equal(r.provider, 'hls');
   assert.equal(r.type, 'hls');

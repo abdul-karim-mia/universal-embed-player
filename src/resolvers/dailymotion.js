@@ -1,5 +1,10 @@
-// Embed parameter reference: https://developer.dailymotion.com/player/
-// Handles dailymotion.com/video/ID_slug and the dai.ly/ID short link.
+// Dailymotion resolver — extracts video ID from dailymotion.com/video/ID_slug
+// and dai.ly/ID short links. The embed URL uses Dailymotion's new embed
+// endpoint at geo.dailymotion.com (migration guide:
+// developers.dailymotion.com/reference/migration-guide-new-embed-endpoint).
+// Since Feb 3, 2026 the legacy www.dailymotion.com/embed/video/X URL
+// redirects to geo.dailymotion.com/player.html?video=X — we emit the new
+// URL directly to avoid the redirect hop and preserve query params.
 const DAILYMOTION_ID_RE = /^[a-zA-Z0-9]+$/;
 
 /**
@@ -32,7 +37,7 @@ export function resolve(url) {
     provider: 'dailymotion',
     type: 'iframe',
     id,
-    embedUrl: `https://www.dailymotion.com/embed/video/${id}`,
+    embedUrl: `https://geo.dailymotion.com/player.html?video=${id}`,
     stability: 'stable',
   };
 }
