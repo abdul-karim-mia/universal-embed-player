@@ -13,7 +13,35 @@ test('youtube: standard watch URL', () => {
   assert.equal(r.provider, 'youtube');
   assert.equal(r.type, 'iframe');
   assert.equal(r.id, 'dQw4w9WgXcQ');
-  assert.equal(r.embedUrl, 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');
+  assert.equal(
+    r.embedUrl,
+    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?modestbranding=1&rel=0&iv_load_policy=3&cc_load_policy=1&showinfo=0',
+  );
+});
+
+test('youtube: applies brand-minimization embed params', () => {
+  const r = resolveSource('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  const params = new URL(r.embedUrl).searchParams;
+  assert.equal(params.get('modestbranding'), '1');
+  assert.equal(params.get('rel'), '0');
+  assert.equal(params.get('iv_load_policy'), '3');
+  assert.equal(params.get('cc_load_policy'), '1');
+  assert.equal(params.get('showinfo'), '0');
+});
+
+test('youtube: parses bare-seconds t= start time into the embed start param', () => {
+  const r = resolveSource('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=90');
+  assert.equal(new URL(r.embedUrl).searchParams.get('start'), '90');
+});
+
+test('youtube: parses composite t=1m30s start time into the embed start param', () => {
+  const r = resolveSource('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=1m30s');
+  assert.equal(new URL(r.embedUrl).searchParams.get('start'), '90');
+});
+
+test('youtube: no t= param means no start param is set', () => {
+  const r = resolveSource('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  assert.equal(new URL(r.embedUrl).searchParams.has('start'), false);
 });
 
 test('youtube: youtu.be short link', () => {
