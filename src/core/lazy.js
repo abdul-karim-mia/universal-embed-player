@@ -43,13 +43,22 @@ export function createLightPoster(container, resolved, options, onActivate) {
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: '68px',
-    height: '48px',
-    background: 'var(--uep-primary-color, #ff0000)',
+    width: '64px',
+    height: '64px',
+    background: 'var(--uep-primary-color, #6d5efc)',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '50%',
     cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
   });
+
+  // Same play glyph as the control bar's play button (ui/controls.js), for
+  // a consistent look between the poster and the mounted player.
+  playButton.innerHTML =
+    '<svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" style="margin-left: 3px"><path d="M8 5v14l11-7z"/></svg>';
   poster.append(playButton);
 
   const activate = () => {
