@@ -34,7 +34,8 @@
  * @typedef {Object} PlayerOptions
  * @property {string} url
  * @property {boolean} [controls]
- * @property {boolean | string} [light]
+ * @property {boolean} [light] - thumbnail-first mode toggle; defers engine mounting until clicked
+ * @property {string} [poster] - custom poster image URL; falls back to a provider default if omitted (see core/lazy.js)
  * @property {boolean} [autoplay]
  * @property {boolean} [muted]
  * @property {boolean} [loop]

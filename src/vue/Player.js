@@ -9,7 +9,8 @@ export const Player = defineComponent({
   props: {
     url: { type: String, required: true },
     controls: { type: Boolean, default: true },
-    light: { type: [Boolean, String], default: false },
+    light: { type: Boolean, default: false },
+    poster: { type: String, default: undefined },
     autoplay: { type: Boolean, default: false },
     muted: { type: Boolean, default: false },
     loop: { type: Boolean, default: false },
@@ -32,6 +33,7 @@ export const Player = defineComponent({
         url: props.url,
         controls: props.controls,
         light: props.light,
+        poster: props.poster,
         autoplay: props.autoplay,
         muted: props.muted,
         loop: props.loop,

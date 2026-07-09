@@ -9,6 +9,7 @@ const PLAYER_OPTION_KEYS = [
   'url',
   'controls',
   'light',
+  'poster',
   'autoplay',
   'muted',
   'loop',

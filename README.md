@@ -93,11 +93,19 @@ import { Player } from 'universal-embed-player/vue';
 
 ### Thumbnail-first ("light") mode
 
-Defers all engine/script loading until the user clicks play:
+Defers all engine/script loading until the user clicks play. `light` toggles
+the mode; `poster` is an independent option for the image itself:
 
 ```js
-createPlayer('#container', { url, light: true });
+createPlayer('#container', { url, light: true });                     // uses a provider default poster if one exists
+createPlayer('#container', { url, light: true, poster: 'my.jpg' });   // custom poster
 ```
+
+Default posters are only available for providers with a predictable,
+deterministic thumbnail URL (YouTube, Dailymotion). Everything else — Vimeo
+(thumbnails are hash-based, not derivable from the ID), professional
+hosting, cloud storage, direct files — shows a plain background unless you
+pass `poster` explicitly.
 
 ## TypeScript
 
@@ -117,7 +125,8 @@ inspect them locally.
 |---|---|---|---|
 | `url` | `string` | — | required |
 | `controls` | `boolean` | `true` | renders the built-in Shadow-DOM control bar |
-| `light` | `boolean \| string` | `false` | thumbnail-first mode; a string is used as a custom poster URL |
+| `light` | `boolean` | `false` | thumbnail-first mode — defers engine mounting until clicked |
+| `poster` | `string` | — | custom poster image URL; falls back to a provider default (YouTube, Dailymotion) if omitted |
 | `autoplay` / `muted` / `loop` | `boolean` | `false` | |
 | `playbackRates` | `number[]` | `[0.5, 1, 1.5, 2]` | shown in the control bar's rate selector |
 | `volume` | `number` (0–1) | — | overrides `volumeKey`-based persistence |

@@ -2,8 +2,17 @@
 // defers all engine mounting (and therefore any third-party script loading)
 // until the user actually interacts — the same pattern `lite-youtube-embed`
 // uses, adopted directly after reading its source (plan.md §0.1 / §9).
+//
+// `light` (boolean) toggles this mode on/off; `poster` (string) is an
+// independent option for the image itself. If `poster` is omitted, we fall
+// back to a provider default where one exists as a predictable, deterministic
+// URL (YouTube, Dailymotion) — providers without one (Vimeo's thumbnails are
+// hash-based and require an API call, not derivable from the ID alone; most
+// professional-hosting/cloud-storage providers have no public thumbnail
+// endpoint at all) just show a plain background rather than a guessed URL.
 const PROVIDER_POSTERS = {
   youtube: (id) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+  dailymotion: (id) => `https://www.dailymotion.com/thumbnail/video/${id}`,
 };
 
 function posterUrlFor(resolved) {
@@ -14,7 +23,7 @@ export function createLightPoster(container, resolved, options, onActivate) {
   const poster = document.createElement('div');
   poster.setAttribute('data-uep-poster', '');
 
-  const image = typeof options.light === 'string' ? options.light : posterUrlFor(resolved);
+  const image = options.poster ?? posterUrlFor(resolved);
 
   Object.assign(poster.style, {
     position: 'absolute',
