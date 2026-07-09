@@ -87,19 +87,48 @@ test('vimeo: standard video URL', () => {
   assert.equal(r.provider, 'vimeo');
   assert.equal(r.type, 'iframe');
   assert.equal(r.id, '76979871');
-  assert.equal(r.embedUrl, 'https://player.vimeo.com/video/76979871?playsinline=1');
+  assert.equal(
+    r.embedUrl,
+    'https://player.vimeo.com/video/76979871?byline=0&portrait=0&title=0&controls=0&playsinline=1',
+  );
 });
 
-test('vimeo: private-hash share URL', () => {
+test('vimeo: applies brand-minimization embed params', () => {
+  const r = resolveSource('https://vimeo.com/76979871');
+  const params = new URL(r.embedUrl).searchParams;
+  assert.equal(params.get('byline'), '0');
+  assert.equal(params.get('portrait'), '0');
+  assert.equal(params.get('title'), '0');
+  assert.equal(params.get('controls'), '0');
+});
+
+test('vimeo: private-hash share URL (path form vimeo.com/ID/HASH)', () => {
   const r = resolveSource('https://vimeo.com/76979871/abcdef1234');
   assert.equal(r.id, '76979871');
-  assert.equal(r.embedUrl, 'https://player.vimeo.com/video/76979871?h=abcdef1234&playsinline=1');
+  assert.equal(new URL(r.embedUrl).searchParams.get('h'), 'abcdef1234');
+});
+
+test('vimeo: private-hash query param form (player.vimeo.com/video/ID?h=HASH)', () => {
+  // This is the exact shape Vimeo's own embed-code/oEmbed generator emits —
+  // previously the hash was silently dropped because only the path form was read.
+  const r = resolveSource('https://player.vimeo.com/video/76979871?h=abcdef1234');
+  assert.equal(r.id, '76979871');
+  assert.equal(new URL(r.embedUrl).searchParams.get('h'), 'abcdef1234');
 });
 
 test('vimeo: already-built player embed URL', () => {
   const r = resolveSource('https://player.vimeo.com/video/76979871');
   assert.equal(r.provider, 'vimeo');
   assert.equal(r.id, '76979871');
+});
+
+test('vimeo: rejects an injection-shaped hash instead of interpolating it', () => {
+  // Guards the security boundary in rules.md §2.4: the query-param hash form
+  // comes from searchParams.get('h'), which URL-decodes freely, so it needs
+  // its own allow-list check (HASH_RE) rather than relying on regex capture
+  // shape like the path form does. Mirrors the YouTube id allow-list test below.
+  const r = resolveSource('https://player.vimeo.com/video/76979871?h=%22%3E%3Cscript%3E');
+  assert.equal(r, null);
 });
 
 // ---------------------------------------------------------------------------

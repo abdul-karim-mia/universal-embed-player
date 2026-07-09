@@ -60,6 +60,12 @@ export const YOUTUBE_PROTOCOL = {
         events: {
           onReady: () => {
             emitter.emit('ready');
+            // PlayerOptions.autoplay/.muted (core/types.js) — previously only
+            // honored by the native <video> engine (engines/media-events.js).
+            // Mute before play since YouTube (like most browsers) only
+            // reliably allows autoplay without a user gesture when muted.
+            if (options.muted) player.mute();
+            if (options.autoplay) player.playVideo();
             progressTimer = setInterval(() => {
               const duration = player.getDuration();
               if (duration) {
