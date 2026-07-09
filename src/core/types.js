@@ -43,7 +43,6 @@
  * @property {string} [volumeKey]
  * @property {PlayerTheme} [theme]
  * @property {boolean} [shield]
- * @property {boolean} [allowBrandMasking] - opt-in, off by default; see core/ui/brand-mask.js
  * @property {(event: UnifiedPlayerEvent) => void} [onEvent]
  */
 

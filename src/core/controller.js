@@ -10,7 +10,6 @@ import { createDashEngine } from './engines/dash.js';
 import { createIframeEngine } from './engines/iframe.js';
 import { createShield } from './ui/shield.js';
 import { createControls } from './ui/controls.js';
-import { createBrandMask } from './ui/brand-mask.js';
 import { createLightPoster } from './lazy.js';
 import { applyTheme } from './ui/theme.js';
 
@@ -65,7 +64,6 @@ export function createPlayer(target, options) {
   let engine = null;
   let shield = null;
   let controls = null;
-  let brandMask = null;
   let lightPoster = null;
   let destroyed = false;
 
@@ -98,10 +96,6 @@ export function createPlayer(target, options) {
     if (options.controls !== false && engine?.controllable) {
       controls = createControls(container, engine, emitter, options);
     }
-
-    if (options.allowBrandMasking && engine?.controllable) {
-      brandMask = createBrandMask(container, resolved.provider);
-    }
   }
 
   const wantsLightMode = Boolean(options.light) && resolved;
@@ -127,7 +121,6 @@ export function createPlayer(target, options) {
       destroyed = true;
       controls?.destroy();
       shield?.destroy();
-      brandMask?.destroy();
       lightPoster?.destroy();
       engine?.destroy();
       emitter.removeAllListeners();
