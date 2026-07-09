@@ -41,10 +41,18 @@ export function createControls(container, engine, emitter, options) {
 
   shadow.innerHTML = `
     <style>
+      /*
+       * All --uep-* defaults live here as var() FALLBACKS, not as :host
+       * declarations. This is intentional: if a default were declared in
+       * :host { --uep-foo: ... } it would win over values *inherited* from
+       * the container (where applyTheme writes them), because a property set
+       * on an element via a CSS rule beats an inherited value from its parent.
+       * Using var(--uep-foo, <default>) instead lets the inherited value from
+       * the container take priority while still providing a sensible fallback
+       * when no theme is supplied.
+       */
       :host {
-        --uep-primary-color: #6d5efc;
-        --uep-accent-color: #ffffff;
-        --uep-font-family: system-ui, sans-serif;
+        display: block;
         opacity: 1;
         transition: opacity 0.25s ease;
       }
@@ -56,13 +64,13 @@ export function createControls(container, engine, emitter, options) {
         display: flex;
         align-items: center;
         gap: 8px;
-        margin: 8px;
-        padding: 5px 10px;
-        border-radius: 999px;
-        background: rgba(20, 18, 32, 0.55);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        font-family: var(--uep-font-family);
+        margin: var(--uep-bar-margin, 8px);
+        padding: var(--uep-bar-padding, 5px 10px);
+        border-radius: var(--uep-bar-radius, 999px);
+        background: var(--uep-bar-bg, rgba(20, 18, 32, 0.55));
+        backdrop-filter: blur(var(--uep-bar-blur, 10px));
+        -webkit-backdrop-filter: blur(var(--uep-bar-blur, 10px));
+        font-family: var(--uep-font-family, system-ui, sans-serif);
       }
       button {
         display: flex;
@@ -71,27 +79,27 @@ export function createControls(container, engine, emitter, options) {
         flex-shrink: 0;
         background: none;
         border: none;
-        color: var(--uep-accent-color);
+        color: var(--uep-accent-color, #ffffff);
         cursor: pointer;
         padding: 5px;
         border-radius: 999px;
         line-height: 0;
       }
       button[data-action='toggle'] {
-        background: var(--uep-primary-color);
-        width: 26px;
-        height: 26px;
+        background: var(--uep-primary-color, #6d5efc);
+        width: var(--uep-btn-size, 26px);
+        height: var(--uep-btn-size, 26px);
       }
       input[type='range'] {
         flex: 1;
         min-width: 0;
-        height: 3px;
-        accent-color: var(--uep-primary-color);
+        height: var(--uep-slider-height, 3px);
+        accent-color: var(--uep-primary-color, #6d5efc);
       }
       .time {
         flex-shrink: 0;
-        color: var(--uep-accent-color);
-        font-size: 11px;
+        color: var(--uep-accent-color, #ffffff);
+        font-size: var(--uep-time-size, 11px);
         font-variant-numeric: tabular-nums;
         opacity: 0.85;
       }
@@ -105,18 +113,55 @@ export function createControls(container, engine, emitter, options) {
         width: 60px;
         margin-left: 4px;
       }
-      .volume-popup {
-        display: none;
+
+      /* ── Shared popup chrome ───────────────────────────────────────────────
+       * Both the volume slider and rate picker use .popup as their base.
+       * Positioning, size, and transform-origin are the only things each
+       * popup adds individually below.
+       * ──────────────────────────────────────────────────────────────────── */
+      .popup {
         position: absolute;
-        bottom: 100%;
+        padding: 6px;
+        border-radius: 14px;
+        background: var(--uep-bar-bg, rgba(20, 18, 32, 0.9));
+        backdrop-filter: blur(var(--uep-bar-blur, 14px));
+        -webkit-backdrop-filter: blur(var(--uep-bar-blur, 14px));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.45),
+          0 0 0 1px rgba(109, 94, 252, 0.12);
+        /* hidden state */
+        opacity: 0;
+        visibility: hidden;
+        transform: scale(0.9);
+        transition:
+          opacity   0.18s ease,
+          transform 0.18s ease,
+          visibility 0s linear 0.18s;
+        pointer-events: none;
+      }
+      .popup.open {
+        opacity: 1;
+        visibility: visible;
+        transform: scale(1);
+        transition:
+          opacity   0.18s ease,
+          transform 0.18s ease,
+          visibility 0s linear 0s;
+        pointer-events: auto;
+      }
+
+      /* ── Volume popup ────────────────────────────────────────────────────── */
+      .volume-popup {
+        bottom: calc(100% + 10px);
         left: 50%;
-        transform: translateX(-50%);
-        margin-bottom: 8px;
         padding: 10px 7px;
         border-radius: 999px;
-        background: rgba(20, 18, 32, 0.85);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        transform-origin: bottom center;
+        transform: scale(0.9) translateY(4px);
+      }
+      .volume-popup.open {
+        transform: scale(1) translateY(0);
       }
       .volume-popup input[type='range'] {
         writing-mode: vertical-lr;
@@ -124,6 +169,8 @@ export function createControls(container, engine, emitter, options) {
         width: 4px;
         height: 64px;
       }
+
+      /* ── Rate group / toggle button ──────────────────────────────────────── */
       .rate-group {
         position: relative;
         display: flex;
@@ -132,39 +179,74 @@ export function createControls(container, engine, emitter, options) {
       }
       button[data-action='rate-toggle'] {
         width: auto;
-        gap: 3px;
-        padding: 4px 8px;
-        font-size: 11px;
-        opacity: 0.85;
+        gap: 4px;
+        padding: 3px 8px 3px 10px;
+        font-size: var(--uep-time-size, 11px);
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        transition: background 0.15s ease, border-color 0.15s ease;
       }
+      button[data-action='rate-toggle']:hover {
+        background: rgba(255, 255, 255, 0.14);
+        border-color: rgba(255, 255, 255, 0.22);
+      }
+      button[data-action='rate-toggle'] svg {
+        transition: transform 0.2s ease;
+        opacity: 0.7;
+      }
+      button[data-action='rate-toggle'][data-open] svg {
+        transform: rotate(180deg);
+        opacity: 1;
+      }
+
+      /* ── Rate popup ──────────────────────────────────────────────────────── */
       .rate-popup {
-        display: none;
-        position: absolute;
-        bottom: 100%;
-        right: 0;
-        margin-bottom: 8px;
-        padding: 4px;
-        border-radius: 10px;
-        min-width: 46px;
-        background: rgba(20, 18, 32, 0.9);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-      }
-      .rate-popup.open {
         display: flex;
         flex-direction: column;
+        gap: 2px;
+        bottom: calc(100% + 10px);
+        right: 0;
+        min-width: 54px;
+        transform-origin: bottom right;
+        transform: scale(0.9) translateY(6px);
       }
+      .rate-popup.open {
+        transform: scale(1) translateY(0);
+      }
+
+      /* ── Rate option buttons ─────────────────────────────────────────────── */
       .rate-option {
         width: 100%;
-        border-radius: 6px;
-        padding: 6px 12px;
-        font-size: 12px;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: var(--uep-time-size, 11px);
+        font-weight: 500;
         font-family: inherit;
+        color: var(--uep-accent-color, #ffffff);
+        text-align: center;
+        opacity: 0.75;
+        transition: background 0.12s ease, opacity 0.12s ease;
+        white-space: nowrap;
+      }
+      .rate-option:hover {
+        background: rgba(255, 255, 255, 0.1);
         opacity: 1;
       }
       .rate-option[data-active] {
-        background: var(--uep-primary-color);
+        background: var(--uep-primary-color, #6d5efc);
+        opacity: 1;
+        font-weight: 700;
       }
+      .rate-option[data-active]:hover {
+        background: var(--uep-primary-color, #6d5efc);
+        filter: brightness(1.1);
+      }
+
+      /* ── Narrow-mode overrides ───────────────────────────────────────────── */
       :host([data-narrow]) .volume-inline {
         display: none;
       }
@@ -172,7 +254,7 @@ export function createControls(container, engine, emitter, options) {
         display: none !important;
       }
       :host([data-narrow]) .volume-popup.open {
-        display: block;
+        display: flex;
       }
     </style>
     <div class="bar" part="bar">
@@ -181,7 +263,7 @@ export function createControls(container, engine, emitter, options) {
       <span class="time" part="time" data-role="time">-0:00</span>
       <div class="volume-group">
         <button part="volume-button" data-action="volume-toggle" aria-label="Volume">${ICONS.volume}</button>
-        <div class="volume-popup" data-role="volume-popup">
+        <div class="volume-popup popup" data-role="volume-popup">
           <input part="volume-slider" class="volume-slider" data-role="volume" type="range" min="0" max="1" value="1" step="0.01" />
         </div>
         <input part="volume-slider-inline" class="volume-inline volume-slider" data-role="volume-inline" type="range" min="0" max="1" value="1" step="0.01" />
@@ -190,7 +272,7 @@ export function createControls(container, engine, emitter, options) {
         <button part="rate-button" data-action="rate-toggle" aria-label="Playback speed">
           <span data-role="rate-label">1x</span>${ICONS.chevron}
         </button>
-        <div class="rate-popup" data-role="rate-popup">
+        <div class="rate-popup popup" data-role="rate-popup">
           ${rates
             .map(
               (rateValue) =>
@@ -259,11 +341,16 @@ export function createControls(container, engine, emitter, options) {
   };
   const onVolumeToggleClick = () => {
     ratePopup.classList.remove('open');
-    volumePopup.classList.toggle('open');
+    rateButton.removeAttribute('data-open');
+    const willOpen = !volumePopup.classList.contains('open');
+    volumePopup.classList.toggle('open', willOpen);
+    volumeButton.toggleAttribute('data-open', willOpen);
   };
   const onRateToggleClick = () => {
     volumePopup.classList.remove('open');
-    ratePopup.classList.toggle('open');
+    const willOpen = !ratePopup.classList.contains('open');
+    ratePopup.classList.toggle('open', willOpen);
+    rateButton.toggleAttribute('data-open', willOpen);
   };
   const onRateOptionClick = (event) => {
     const value = Number(event.currentTarget.dataset.rate);
@@ -273,14 +360,17 @@ export function createControls(container, engine, emitter, options) {
       option.toggleAttribute('data-active', Number(option.dataset.rate) === value);
     }
     ratePopup.classList.remove('open');
+    rateButton.removeAttribute('data-open');
   };
   const onOutsideClick = (event) => {
     const path = event.composedPath();
     if (!path.includes(volumeButton) && !path.includes(volumePopup)) {
       volumePopup.classList.remove('open');
+      volumeButton.removeAttribute('data-open');
     }
     if (!path.includes(rateButton) && !path.includes(ratePopup)) {
       ratePopup.classList.remove('open');
+      rateButton.removeAttribute('data-open');
     }
   };
   const onFullscreenClick = () => {
