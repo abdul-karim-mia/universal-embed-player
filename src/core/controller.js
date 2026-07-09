@@ -27,20 +27,8 @@ const EVENT_TYPES = [
 
 /**
  * @param {string | HTMLElement} target
- * @param {{
- *   url: string,
- *   controls?: boolean,
- *   light?: boolean | string,
- *   autoplay?: boolean,
- *   muted?: boolean,
- *   loop?: boolean,
- *   playbackRates?: number[],
- *   volume?: number,
- *   volumeKey?: string,
- *   theme?: { primaryColor?: string, accentColor?: string, fontFamily?: string },
- *   shield?: boolean,
- *   onEvent?: (event: object) => void,
- * }} options
+ * @param {import('./types.js').PlayerOptions} options
+ * @returns {import('./types.js').UepPlayer}
  */
 export function createPlayer(target, options) {
   if (typeof window === 'undefined') {
@@ -120,7 +108,8 @@ export function createPlayer(target, options) {
       })
     : mountEngine();
 
-  return {
+  /** @type {import('./types.js').UepPlayer} */
+  const player = {
     play: () => engine?.play(),
     pause: () => engine?.pause(),
     seekTo: (seconds) => engine?.seekTo(seconds),
@@ -138,8 +127,10 @@ export function createPlayer(target, options) {
     },
     ready,
   };
+  return player;
 }
 
+/** @returns {import('./types.js').UepPlayer} */
 function createNoopPlayer() {
   const noop = () => {};
   return {

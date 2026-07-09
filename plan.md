@@ -70,6 +70,35 @@ Beyond the v1.0.0 matrix in §2, the oEmbed/market research surfaced providers w
 
 **Rule for adding any of these later:** follow rules.md §2's resolver contract exactly — new file, new fixture, no new dependency, no synchronous network call during matching (the Mux/Cloudflare/Bunny "page URL" resolvers are the one case that might *look* like it needs a network call to resolve an ID to a manifest path; if the ID-to-manifest-URL mapping isn't derivable by pure string transform for a given provider, that provider is deferred rather than exempted from the no-network rule).
 
+## 0.4 Dacast — deferred, not a resolver (2026-07-09 research)
+
+FastPix, JW Player, and Kaltura resolvers were implemented and confirmed
+against each provider's own documentation (§2 table above). Dacast was
+investigated in the same pass and **deliberately not implemented**, for a
+reason worth recording rather than silently skipping:
+
+- Dacast's currently-documented embed flow (`docs.dacast.com/docs/embed-codes`)
+  generates the iframe/JS embed code **per video via their Developer API**
+  (`GET /v2/vod/{vodId}/embed/javascript` style endpoints), not through a
+  predictable client-side URL string transform.
+- An older, historically-referenced direct iframe shape
+  (`iframe.dacast.com/b/{broadcasterId}/f/{contentId}`) exists in
+  community docs, but could not be confirmed as Dacast's current, stable
+  format with the research available in this pass.
+- Building a resolver on the unconfirmed legacy shape risks shipping a
+  regex that looks plausible but silently fails for current Dacast
+  accounts — worse than not having a resolver at all, since a developer
+  would reasonably assume it was tested against real Dacast URLs.
+- Per rules.md §2's resolver contract, resolution must be a synchronous,
+  no-network string transform; if Dacast's real current mechanism requires
+  an API round-trip to produce the embeddable URL, it doesn't fit that
+  contract any more than iCloud's redirect-resolution problem does (§8).
+
+**Status:** deferred, not scoped into any milestone. Add a `dacast.js`
+resolver only once someone can confirm (from a real Dacast account) a
+stable, purely regex-resolvable embed URL shape — at that point it follows
+the same contract as every other resolver (rules.md §2).
+
 ---
 
 ## 1. Vision
@@ -155,10 +184,10 @@ Each resolver is a pure function `(url: string) => ResolvedSource | null`, regis
 | Public Social | Dailymotion | regex on `dailymotion.com/video/ID` | `geo.dailymotion.com/player/x*.html?video=ID` iframe |
 | Professional | Cloudflare Stream | regex on `cloudflarestream.com/ID` or customer subdomain | `iframe.cloudflarestream.com/ID` or signed HLS manifest URL |
 | Professional | Wistia | regex on `wistia.com/medias/ID` or `fast.wistia.net` | Wistia embed iframe / Channel API |
-| Professional | FastPix | regex on FastPix playback domain | Direct HLS manifest URL passthrough |
-| Professional | Dacast | regex on `dacast.com` content ID pattern | Dacast embed iframe |
-| Professional | JW Player | regex on JW hosted `content.jwplatform.com` | JW HLS/manifest passthrough |
-| Professional | Kaltura | regex on `kaltura.com/.../entryId/ID` | Kaltura embed iframe (uiconf/partner ID parsing) |
+| Professional | FastPix ✅ implemented | `play.fastpix.io/?playbackId=ID` | `https://play.fastpix.io/?playbackId=ID` iframe passthrough; direct `stream.fastpix.io/ID.m3u8` needs no bespoke resolver — handled by the generic HLS resolver (§0.1) |
+| Professional | Dacast — **deferred, not implemented** | n/a | See §0.4 below: no confirmed, purely client-side-resolvable URL scheme found |
+| Professional | JW Player ✅ implemented | `cdn.jwplayer.com/players/MEDIAID-PLAYERID.html` or `content.jwplatform.com/players/...` | Direct iframe URL passthrough (the input URL already is the embeddable form) |
+| Professional | Kaltura ✅ implemented | `kaltura.com/.../extwidget/preview/partner_id/P/uiconf_id/U/entry_id/E/...` | Parses the three path key/value pairs, rebuilds the canonical `.../embed/iframe` URL |
 | Cloud Storage | Google Drive | regex on `drive.google.com/file/d/ID` or `open?id=ID` | Rewrite → `drive.google.com/uc?export=view&id=ID` fed into `<video>` |
 | Cloud Storage | Dropbox | regex on `dropbox.com/s/...` or `/scl/fi/...` | Replace `?dl=0` → `?raw=1` |
 | Cloud Storage | OneDrive | regex on `1drv.ms` / `onedrive.live.com/embed` | Transform `/embed` params into direct `/download` URL |
@@ -350,7 +379,7 @@ TDD workflow per house rules: write resolver/controller tests first (RED), imple
 | **M5 — Unified UI layer** | Shadow-DOM control bar, CSS variable theming, `::part()` exposure. |
 | **M6 — Lazy/thumbnail-first mode** | `light` prop, deferred SDK loading, Lighthouse benchmark pass. |
 | **M7 — React + Vue adapters** | `<Player>` components, SSR safety verified in a Next.js + Nuxt smoke app. |
-| **M8 — Professional hosting providers** | Cloudflare Stream, Wistia, FastPix, Dacast, JW Player, Kaltura resolvers + iframe embeds. |
+| **M8 — Professional hosting providers** | Cloudflare Stream, Wistia, FastPix, JW Player, Kaltura resolvers + iframe embeds — done. Dacast deferred, see §0.4. |
 | **M9 — Hardening** | Security review pass (§11), CSP docs, error taxonomy finalized, fixture-based cloud-resolver tests, dependency-ceiling CI check (§0.2) green. |
 | **M10 — v1.0.0 release** | README, API docs site, examples (Vite, Next.js, Nuxt, Astro), publish to npm, tag release. |
 

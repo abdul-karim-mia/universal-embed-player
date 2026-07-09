@@ -20,6 +20,17 @@ const PLAYER_OPTION_KEYS = [
   'onEvent',
 ];
 
+/**
+ * @typedef {import('../core/types.js').PlayerOptions & {
+ *   className?: string,
+ *   style?: import('react').CSSProperties,
+ * }} PlayerProps
+ */
+
+/**
+ * @param {PlayerProps} props
+ * @returns {import('react').ReactElement}
+ */
 export function Player(props) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);

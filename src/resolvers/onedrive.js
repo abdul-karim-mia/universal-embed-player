@@ -3,7 +3,10 @@
 // the <video> element's own network request follows natively — no JS-side
 // redirect-following is needed, so this stays a synchronous, pure resolver like
 // every other provider except icloud.js (see rules.md §2 resolver contract).
-/** @type {(url: string) => import('../core/types.js').ResolvedSource | null} */
+/**
+ * @param {string} url
+ * @returns {import('../core/types.js').ResolvedSource | null}
+ */
 export function resolve(url) {
   let parsed;
   try {

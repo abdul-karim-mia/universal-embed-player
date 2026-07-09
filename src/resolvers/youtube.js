@@ -6,7 +6,10 @@
 const YOUTUBE_HOST_RE = /(^|\.)youtube(-nocookie|education)?\.com$/;
 const VIDEO_ID_RE = /^[\w-]{11}$/;
 
-/** @type {(url: string) => import('../core/types.js').ResolvedSource | null} */
+/**
+ * @param {string} url
+ * @returns {import('../core/types.js').ResolvedSource | null}
+ */
 export function resolve(url) {
   let parsed;
   try {

@@ -4,7 +4,10 @@
 const WISTIA_RE = /(?:wistia\.(?:com|net)|wi\.st)\/(?:medias|embed)\/(?:iframe\/)?([^/?#]+)/i;
 const WISTIA_ID_RE = /^[\w-]+$/;
 
-/** @type {(url: string) => import('../core/types.js').ResolvedSource | null} */
+/**
+ * @param {string} url
+ * @returns {import('../core/types.js').ResolvedSource | null}
+ */
 export function resolve(url) {
   const match = url.match(WISTIA_RE);
   if (!match) return null;

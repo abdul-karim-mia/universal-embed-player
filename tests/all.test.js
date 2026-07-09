@@ -124,6 +124,56 @@ test('cloudflare stream: direct .m3u8 manifest URL is handled by the generic HLS
 });
 
 // ---------------------------------------------------------------------------
+// FastPix
+// ---------------------------------------------------------------------------
+test('fastpix: play.fastpix.io dashboard/share URL', () => {
+  const r = resolveSource('https://play.fastpix.io/?playbackId=abc123-def456');
+  assert.equal(r.provider, 'fastpix');
+  assert.equal(r.type, 'iframe');
+  assert.equal(r.id, 'abc123-def456');
+});
+
+test('fastpix: direct .m3u8 stream URL is handled by the generic HLS resolver, not this one', () => {
+  const r = resolveSource('https://stream.fastpix.io/abc123-def456.m3u8');
+  assert.equal(r.provider, 'hls');
+  assert.equal(r.type, 'hls');
+});
+
+// ---------------------------------------------------------------------------
+// JW Player
+// ---------------------------------------------------------------------------
+test('jwplayer: cdn.jwplayer.com players URL', () => {
+  const r = resolveSource('https://cdn.jwplayer.com/players/AbCd1234-EfGh5678.html');
+  assert.equal(r.provider, 'jwplayer');
+  assert.equal(r.type, 'iframe');
+  assert.equal(r.id, 'AbCd1234');
+  assert.equal(r.embedUrl, 'https://cdn.jwplayer.com/players/AbCd1234-EfGh5678.html');
+});
+
+test('jwplayer: content.jwplatform.com players URL', () => {
+  const r = resolveSource('https://content.jwplatform.com/players/AbCd1234-EfGh5678.html');
+  assert.equal(r.provider, 'jwplayer');
+  assert.equal(r.id, 'AbCd1234');
+});
+
+// ---------------------------------------------------------------------------
+// Kaltura
+// ---------------------------------------------------------------------------
+test('kaltura: extwidget/preview iframe URL', () => {
+  const r = resolveSource(
+    'https://www.kaltura.com/index.php/extwidget/preview/partner_id/723092/uiconf_id/25439611/entry_id/1_qh8ydw54/embed/iframe',
+  );
+  assert.equal(r.provider, 'kaltura');
+  assert.equal(r.type, 'iframe');
+  assert.equal(r.id, '1_qh8ydw54');
+});
+
+test('kaltura: rejects a URL missing a required param', () => {
+  const r = resolveSource('https://www.kaltura.com/index.php/extwidget/preview/partner_id/723092/embed/iframe');
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
 // Google Drive
 // ---------------------------------------------------------------------------
 test('gdrive: /file/d/<id>/view share link', () => {

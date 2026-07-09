@@ -7,7 +7,10 @@
 const CF_STREAM_HOST_RE = /^(?:iframe|watch)\.cloudflarestream\.com$/;
 const CF_STREAM_ID_RE = /^[a-zA-Z0-9]+$/;
 
-/** @type {(url: string) => import('../core/types.js').ResolvedSource | null} */
+/**
+ * @param {string} url
+ * @returns {import('../core/types.js').ResolvedSource | null}
+ */
 export function resolve(url) {
   let parsed;
   try {

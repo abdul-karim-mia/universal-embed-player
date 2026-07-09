@@ -33,7 +33,7 @@ that keep it that way.
 | Category | Providers |
 |---|---|
 | Public social video | YouTube (standard, Shorts, unlisted, live), Vimeo (incl. private-hash links), Dailymotion |
-| Professional hosting | Wistia, Cloudflare Stream |
+| Professional hosting | Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura (Dacast deferred — see plan.md §0.4) |
 | Cloud storage | Google Drive, Dropbox, OneDrive, iCloud (experimental — see caveats below) |
 | Raw infrastructure | HLS (`.m3u8`), DASH (`.mpd`), MP4/WebM/Ogg/MOV |
 
@@ -111,6 +111,16 @@ pattern `lite-youtube-embed` uses:
 ```js
 createPlayer('#container', { url, light: true });
 ```
+
+## TypeScript
+
+Type declarations are generated from JSDoc (no hand-maintained `.d.ts` to
+drift out of sync with the source) and published alongside the package —
+`import { createPlayer } from 'universal-embed-player'` gets full
+autocomplete with no extra install. Declarations are generated fresh at
+publish time (`npm run build:types`, wired into `prepublishOnly`); they
+aren't committed to the repo, so run that script yourself if you need to
+inspect them locally.
 
 ## API
 

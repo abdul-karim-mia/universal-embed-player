@@ -5,7 +5,10 @@
 // the one documented "best effort, not guaranteed" resolver in the matrix.
 const ICLOUD_HOST_RE = /(^|\.)icloud\.com$/;
 
-/** @type {(url: string) => import('../core/types.js').ResolvedSource | null} */
+/**
+ * @param {string} url
+ * @returns {import('../core/types.js').ResolvedSource | null}
+ */
 export function resolve(url) {
   let parsed;
   try {

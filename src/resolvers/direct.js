@@ -8,7 +8,10 @@ const VIDEO_EXT_RE = /\.(mp4|og[gv]|webm|mov|m4v)(#t=[\d,.]+)?($|\?)/i;
 const HLS_EXT_RE = /\.(m3u8)($|\?)/i;
 const DASH_EXT_RE = /\.(mpd)($|\?)/i;
 
-/** @type {(url: string) => import('../core/types.js').ResolvedSource | null} */
+/**
+ * @param {string} url
+ * @returns {import('../core/types.js').ResolvedSource | null}
+ */
 export function resolve(url) {
   if (HLS_EXT_RE.test(url)) {
     return { provider: 'hls', type: 'hls', src: url, stability: 'stable' };

@@ -5,22 +5,38 @@
   "type": "module",
   "main": "src/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./resolvers/*": "./src/resolvers/*.js",
-    "./react": "./src/react/index.js",
-    "./vue": "./src/vue/index.js"
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./resolvers/*": {
+      "types": "./types/resolvers/*.d.ts",
+      "default": "./src/resolvers/*.js"
+    },
+    "./react": {
+      "types": "./types/react/index.d.ts",
+      "default": "./src/react/index.js"
+    },
+    "./vue": {
+      "types": "./types/vue/index.d.ts",
+      "default": "./src/vue/index.js"
+    }
   },
   "sideEffects": false,
   "files": [
-    "src"
+    "src",
+    "types"
   ],
   "scripts": {
-    "test": "node --test tests/all.test.js"
+    "test": "node --test tests/all.test.js",
+    "build:types": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build:types"
   },
+  "types": "types/index.d.ts",
   "dependencies": {},
   "peerDependencies": {
-    "hls.js": ">=1.5.0",
     "dash.js": ">=4.7.0",
+    "hls.js": ">=1.5.0",
     "react": ">=18.0.0",
     "vue": ">=3.0.0"
   },
@@ -62,5 +78,11 @@
     "google-drive",
     "dropbox",
     "onedrive"
-  ]
+  ],
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "react": "^19.2.7",
+    "typescript": "7.0.2",
+    "vue": "^3.5.39"
+  }
 }

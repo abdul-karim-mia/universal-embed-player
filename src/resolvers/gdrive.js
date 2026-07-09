@@ -5,7 +5,10 @@
 // should still handle the controller's onResolveError callback for large files.
 const GDRIVE_ID_RE = /^[\w-]+$/;
 
-/** @type {(url: string) => import('../core/types.js').ResolvedSource | null} */
+/**
+ * @param {string} url
+ * @returns {import('../core/types.js').ResolvedSource | null}
+ */
 export function resolve(url) {
   let parsed;
   try {

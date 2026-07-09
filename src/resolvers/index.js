@@ -3,6 +3,9 @@ import { resolve as vimeo } from './vimeo.js';
 import { resolve as dailymotion } from './dailymotion.js';
 import { resolve as wistia } from './wistia.js';
 import { resolve as cloudflareStream } from './cloudflare-stream.js';
+import { resolve as fastpix } from './fastpix.js';
+import { resolve as jwplayer } from './jwplayer.js';
+import { resolve as kaltura } from './kaltura.js';
 import { resolve as gdrive } from './gdrive.js';
 import { resolve as dropbox } from './dropbox.js';
 import { resolve as onedrive } from './onedrive.js';
@@ -17,6 +20,9 @@ export const RESOLVERS = [
   dailymotion,
   wistia,
   cloudflareStream,
+  fastpix,
+  jwplayer,
+  kaltura,
   gdrive,
   dropbox,
   onedrive,

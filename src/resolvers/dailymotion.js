@@ -2,7 +2,10 @@
 // Handles dailymotion.com/video/ID_slug and the dai.ly/ID short link.
 const DAILYMOTION_ID_RE = /^[a-zA-Z0-9]+$/;
 
-/** @type {(url: string) => import('../core/types.js').ResolvedSource | null} */
+/**
+ * @param {string} url
+ * @returns {import('../core/types.js').ResolvedSource | null}
+ */
 export function resolve(url) {
   let parsed;
   try {
