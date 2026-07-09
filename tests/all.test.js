@@ -15,7 +15,7 @@ test('youtube: standard watch URL', () => {
   assert.equal(r.id, 'dQw4w9WgXcQ');
   assert.equal(
     r.embedUrl,
-    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?controls=0&modestbranding=1&rel=0&iv_load_policy=3&cc_load_policy=1&showinfo=0',
+    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?controls=0&modestbranding=1&rel=0&iv_load_policy=3&cc_load_policy=1&showinfo=0&playsinline=1',
   );
 });
 
@@ -87,13 +87,13 @@ test('vimeo: standard video URL', () => {
   assert.equal(r.provider, 'vimeo');
   assert.equal(r.type, 'iframe');
   assert.equal(r.id, '76979871');
-  assert.equal(r.embedUrl, 'https://player.vimeo.com/video/76979871');
+  assert.equal(r.embedUrl, 'https://player.vimeo.com/video/76979871?playsinline=1');
 });
 
 test('vimeo: private-hash share URL', () => {
   const r = resolveSource('https://vimeo.com/76979871/abcdef1234');
   assert.equal(r.id, '76979871');
-  assert.equal(r.embedUrl, 'https://player.vimeo.com/video/76979871?h=abcdef1234');
+  assert.equal(r.embedUrl, 'https://player.vimeo.com/video/76979871?h=abcdef1234&playsinline=1');
 });
 
 test('vimeo: already-built player embed URL', () => {

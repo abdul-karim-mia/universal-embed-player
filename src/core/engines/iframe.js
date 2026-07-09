@@ -56,7 +56,7 @@ export async function createIframeEngine(container, resolvedSource, options, emi
     };
   }
 
-  const commands = await protocol.attach(iframe, emitter);
+  const commands = await protocol.attach(iframe, emitter, options);
 
   if (!commands) {
     // API script failed to load (offline, blocked, CSP) — iframe still shows

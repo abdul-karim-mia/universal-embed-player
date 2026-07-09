@@ -26,6 +26,9 @@ export function resolve(url) {
 
   const embed = new URL(`https://player.vimeo.com/video/${id}`);
   if (hash) embed.searchParams.set('h', hash);
+  // Plays inline on iOS instead of forcing fullscreen (same reasoning as the
+  // YouTube resolver — cross-checked against Plyr's iOS handling).
+  embed.searchParams.set('playsinline', '1');
 
   return {
     provider: 'vimeo',

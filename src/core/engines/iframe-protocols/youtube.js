@@ -47,8 +47,9 @@ export const YOUTUBE_PROTOCOL = {
   /**
    * @param {HTMLIFrameElement} iframe
    * @param {import('../events.js').UnifiedEventEmitter} emitter
+   * @param {import('../../types.js').PlayerOptions} options
    */
-  async attach(iframe, emitter) {
+  async attach(iframe, emitter, options) {
     const YT = await loadYouTubeApi();
     if (!YT) return null;
 
@@ -82,6 +83,13 @@ export const YOUTUBE_PROTOCOL = {
             });
           },
           onStateChange: (event) => {
+            // YouTube has no native single-video loop param — restart on
+            // 'ended' instead, same approach as Plyr's youtube plugin.
+            if (event.data === 0 && options.loop) {
+              player.seekTo(0, true);
+              player.playVideo();
+              return;
+            }
             const type = STATE_MAP[event.data];
             if (type) emitter.emit(type);
           },

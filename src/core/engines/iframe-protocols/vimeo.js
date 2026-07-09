@@ -12,7 +12,7 @@ function post(win, payload) {
   win?.postMessage(JSON.stringify(payload), VIMEO_ORIGIN);
 }
 
-function handleMessage(raw, emitter) {
+function handleMessage(raw, emitter, iframe, options) {
   let data;
   try {
     data = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -31,7 +31,15 @@ function handleMessage(raw, emitter) {
       emitter.emit('pause');
       break;
     case 'ended':
-      emitter.emit('ended');
+      // Same restart-on-ended approach as youtube.js, kept consistent across
+      // both protocols rather than relying on Vimeo's less-certain native
+      // setLoop command.
+      if (options.loop) {
+        post(iframe.contentWindow, { method: 'setCurrentTime', value: 0 });
+        post(iframe.contentWindow, { method: 'play' });
+      } else {
+        emitter.emit('ended');
+      }
       break;
     case 'timeupdate':
       emitter.emit('timeupdate', {
@@ -61,12 +69,13 @@ export const VIMEO_PROTOCOL = {
   /**
    * @param {HTMLIFrameElement} iframe
    * @param {import('../events.js').UnifiedEventEmitter} emitter
+   * @param {import('../../types.js').PlayerOptions} options
    */
-  async attach(iframe, emitter) {
+  async attach(iframe, emitter, options) {
     const onMessage = (event) => {
       if (event.origin !== VIMEO_ORIGIN) return;
       if (event.source !== iframe.contentWindow) return;
-      handleMessage(event.data, emitter);
+      handleMessage(event.data, emitter, iframe, options);
     };
     window.addEventListener('message', onMessage);
 

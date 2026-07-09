@@ -73,6 +73,9 @@ export function resolve(url) {
   embedUrl.searchParams.set('iv_load_policy', '3');
   embedUrl.searchParams.set('cc_load_policy', '1');
   embedUrl.searchParams.set('showinfo', '0');
+  // Plays inline on iOS instead of forcing fullscreen (cross-checked against
+  // Plyr's youtube plugin, which sets this for the same reason).
+  embedUrl.searchParams.set('playsinline', '1');
 
   const startSeconds = parseStartSeconds(url);
   if (startSeconds) embedUrl.searchParams.set('start', String(startSeconds));
