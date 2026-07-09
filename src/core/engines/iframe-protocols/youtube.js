@@ -1,14 +1,40 @@
-// YouTube IFrame postMessage protocol.
+// YouTube IFrame Player API.
 // Reference: https://developers.google.com/youtube/iframe_api_reference
-// We speak the postMessage wire protocol directly instead of loading the
-// full iframe_api script — keeps this path script-injection-free until a
-// consumer actually needs it (plan.md §9 performance strategy).
-const YT_ORIGIN = 'https://www.youtube-nocookie.com';
-const STATE_MAP = { 0: 'ended', 1: 'play', 2: 'pause', 3: 'buffering' };
+//
+// An earlier version of this file hand-rolled the raw postMessage wire
+// protocol to avoid loading YouTube's ~15KB iframe_api script. That command
+// direction (parent → iframe) worked, but state feedback (iframe → parent —
+// onStateChange/infoDelivery) did not reliably arrive without the official
+// API bridging it, so the custom control bar's play icon and progress bar
+// never updated even though clicking play actually started the video. Cross-
+// checked against Mux's youtube-video-element (the implementation react-player
+// v3 delegates to, see plan.md §0.1): it always loads the real API for
+// exactly this reason. We do the same now — still lazy (only loaded when a
+// YouTube source actually mounts), but via the real, supported bridge.
+let apiPromise = null;
 
-function post(win, payload) {
-  win?.postMessage(JSON.stringify(payload), YT_ORIGIN);
+function loadYouTubeApi() {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+  if (apiPromise) return apiPromise;
+
+  apiPromise = new Promise((resolve) => {
+    const previousCallback = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      previousCallback?.();
+      resolve(window.YT);
+    };
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    document.head.append(script);
+  });
+
+  return apiPromise;
 }
+
+const STATE_MAP = { 0: 'ended', 1: 'play', 2: 'pause', 3: 'buffering' };
+const PROGRESS_INTERVAL_MS = 250;
 
 export const YOUTUBE_PROTOCOL = {
   buildSrc(embedUrl, origin) {
@@ -18,35 +44,57 @@ export const YOUTUBE_PROTOCOL = {
     return url.toString();
   },
 
-  originMatches(origin) {
-    return origin === 'https://www.youtube-nocookie.com' || origin === 'https://www.youtube.com';
+  /**
+   * @param {HTMLIFrameElement} iframe
+   * @param {import('../events.js').UnifiedEventEmitter} emitter
+   */
+  async attach(iframe, emitter) {
+    const YT = await loadYouTubeApi();
+    if (!YT) return null;
+
+    let progressTimer = null;
+
+    return new Promise((resolve) => {
+      const player = new YT.Player(iframe, {
+        events: {
+          onReady: () => {
+            emitter.emit('ready');
+            progressTimer = setInterval(() => {
+              const duration = player.getDuration();
+              if (duration) {
+                emitter.emit('timeupdate', { currentTime: player.getCurrentTime(), duration });
+              }
+            }, PROGRESS_INTERVAL_MS);
+
+            resolve({
+              play: () => player.playVideo(),
+              pause: () => player.pauseVideo(),
+              seekTo: (seconds) => player.seekTo(seconds, true),
+              setVolume: (volume) => {
+                player.setVolume(Math.round(volume * 100));
+                emitter.emit('volumechange', { volume, muted: player.isMuted() });
+              },
+              setPlaybackRate: (rate) => player.setPlaybackRate(rate),
+              destroy: () => {
+                clearInterval(progressTimer);
+                player.destroy();
+              },
+            });
+          },
+          onStateChange: (event) => {
+            const type = STATE_MAP[event.data];
+            if (type) emitter.emit(type);
+          },
+          onPlaybackRateChange: (event) => emitter.emit('ratechange', { rate: event.data }),
+          onError: (event) => {
+            emitter.emit('error', {
+              code: `YOUTUBE_${event.data}`,
+              message: `YouTube player error #${event.data} — see https://developers.google.com/youtube/iframe_api_reference#onError`,
+              provider: 'youtube',
+            });
+          },
+        },
+      });
+    });
   },
-
-  onReady(win) {
-    post(win, { event: 'listening', id: 'uep' });
-  },
-
-  handleMessage(raw, emitter) {
-    let data;
-    try {
-      data = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    } catch {
-      return;
-    }
-
-    if (data.event === 'onReady') {
-      emitter.emit('ready');
-    } else if (data.event === 'onStateChange') {
-      const type = STATE_MAP[data.info];
-      if (type) emitter.emit(type);
-    } else if (data.event === 'infoDelivery' && data.info && typeof data.info.currentTime === 'number') {
-      emitter.emit('timeupdate', { currentTime: data.info.currentTime, duration: data.info.duration || 0 });
-    }
-  },
-
-  play: (win) => post(win, { event: 'command', func: 'playVideo', args: [] }),
-  pause: (win) => post(win, { event: 'command', func: 'pauseVideo', args: [] }),
-  seekTo: (win, seconds) => post(win, { event: 'command', func: 'seekTo', args: [seconds, true] }),
-  setVolume: (win, volume) => post(win, { event: 'command', func: 'setVolume', args: [Math.round(volume * 100)] }),
-  setPlaybackRate: (win, rate) => post(win, { event: 'command', func: 'setPlaybackRate', args: [rate] }),
 };

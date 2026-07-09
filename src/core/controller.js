@@ -77,7 +77,7 @@ export function createPlayer(target, options) {
     } else if (resolved.type === 'dash') {
       engine = await createDashEngine(container, resolved, options, emitter);
     } else if (resolved.type === 'iframe') {
-      engine = createIframeEngine(container, resolved, options, emitter);
+      engine = await createIframeEngine(container, resolved, options, emitter);
     }
 
     // The async hls/dash import may resolve after destroy() was already called.

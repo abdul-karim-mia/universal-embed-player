@@ -1,12 +1,13 @@
 // Iframe engine for cross-origin providers (YouTube, Vimeo, Dailymotion,
 // Wistia, Cloudflare Stream). Cannot reach into the iframe's own DOM to
 // strip vendor chrome — that's blocked by same-origin policy, full stop
-// (plan.md §7). Where a documented postMessage protocol exists (YouTube,
-// Vimeo) this engine drives real play/pause/seek/volume commands and marks
-// itself `controllable`; the interaction shield (core/ui/shield.js) is only
-// mounted by the controller when `controllable` is true (rules.md §4.5) —
-// providers without a protocol adapter keep their native controls visible so
-// the user always has a way to operate playback.
+// (plan.md §7). Where a real control bridge exists (YouTube's IFrame Player
+// API, Vimeo's player.js postMessage protocol) this engine drives real
+// play/pause/seek/volume commands via `protocol.attach()` and marks itself
+// `controllable`; the interaction shield (core/ui/shield.js) and custom
+// control bar are only mounted by the controller when `controllable` is
+// true (rules.md §4.5) — providers without a protocol adapter keep their
+// native controls visible so the user always has a way to operate playback.
 import { YOUTUBE_PROTOCOL } from './iframe-protocols/youtube.js';
 import { VIMEO_PROTOCOL } from './iframe-protocols/vimeo.js';
 
@@ -19,7 +20,7 @@ const PROTOCOLS = {
 // to function (plan.md §11). No allow-top-navigation, no allow-popups.
 const SANDBOX = 'allow-scripts allow-same-origin allow-presentation allow-popups-to-escape-sandbox';
 
-export function createIframeEngine(container, resolvedSource, options, emitter) {
+export async function createIframeEngine(container, resolvedSource, options, emitter) {
   const protocol = PROTOCOLS[resolvedSource.provider] ?? null;
 
   const iframe = document.createElement('iframe');
@@ -39,36 +40,49 @@ export function createIframeEngine(container, resolvedSource, options, emitter) 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   iframe.src = protocol ? protocol.buildSrc(resolvedSource.embedUrl, origin) : resolvedSource.embedUrl;
 
-  let onMessage = null;
-
-  if (protocol) {
-    onMessage = (event) => {
-      if (!protocol.originMatches(event.origin)) return;
-      if (event.source !== iframe.contentWindow) return;
-      protocol.handleMessage(event.data, emitter);
-    };
-    window.addEventListener('message', onMessage);
-    iframe.addEventListener('load', () => protocol.onReady(iframe.contentWindow), { once: true });
-  } else {
-    iframe.addEventListener('load', () => emitter.emit('ready'), { once: true });
-  }
-
   container.append(iframe);
 
-  const send = (fn) => {
-    if (protocol) fn(iframe.contentWindow);
-  };
+  if (!protocol) {
+    iframe.addEventListener('load', () => emitter.emit('ready'), { once: true });
+    return {
+      mediaElement: iframe,
+      controllable: false,
+      play: () => {},
+      pause: () => {},
+      seekTo: () => {},
+      setVolume: () => {},
+      setPlaybackRate: () => {},
+      destroy: () => iframe.remove(),
+    };
+  }
+
+  const commands = await protocol.attach(iframe, emitter);
+
+  if (!commands) {
+    // API script failed to load (offline, blocked, CSP) — iframe still shows
+    // the provider's own native controls since we never claim `controllable`.
+    return {
+      mediaElement: iframe,
+      controllable: false,
+      play: () => {},
+      pause: () => {},
+      seekTo: () => {},
+      setVolume: () => {},
+      setPlaybackRate: () => {},
+      destroy: () => iframe.remove(),
+    };
+  }
 
   return {
     mediaElement: iframe,
-    controllable: Boolean(protocol),
-    play: () => send((win) => protocol.play(win)),
-    pause: () => send((win) => protocol.pause(win)),
-    seekTo: (seconds) => send((win) => protocol.seekTo(win, seconds)),
-    setVolume: (volume) => send((win) => protocol.setVolume(win, volume)),
-    setPlaybackRate: (rate) => send((win) => protocol.setPlaybackRate(win, rate)),
+    controllable: true,
+    play: commands.play,
+    pause: commands.pause,
+    seekTo: commands.seekTo,
+    setVolume: commands.setVolume,
+    setPlaybackRate: commands.setPlaybackRate,
     destroy: () => {
-      if (onMessage) window.removeEventListener('message', onMessage);
+      commands.destroy();
       iframe.remove();
     },
   };
