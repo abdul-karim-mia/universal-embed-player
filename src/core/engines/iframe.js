@@ -20,11 +20,13 @@
 import { YOUTUBE_PROTOCOL } from './iframe-protocols/youtube.js';
 import { VIMEO_PROTOCOL } from './iframe-protocols/vimeo.js';
 import { WISTIA_PROTOCOL } from './iframe-protocols/wistia.js';
+import { KALTURA_PROTOCOL } from './iframe-protocols/kaltura.js';
 
 const PROTOCOLS = {
   youtube: YOUTUBE_PROTOCOL,
   vimeo: VIMEO_PROTOCOL,
   wistia: WISTIA_PROTOCOL,
+  kaltura: KALTURA_PROTOCOL,
 };
 
 // Minimum sandbox set that still allows each provider's own scripts/fullscreen

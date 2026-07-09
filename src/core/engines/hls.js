@@ -4,9 +4,11 @@
 // (never a static top-level import — see rules.md §1a) so a consumer who
 // never touches an .m3u8 source never pays for it.
 import { applyMediaOptions, attachMediaElementEvents, createMediaControls } from './media-events.js';
+import { posterUrlFor } from '../lazy.js';
 
 export async function createHlsEngine(container, resolvedSource, options, emitter) {
   const video = document.createElement('video');
+  video.poster = options.poster ?? resolvedSource.poster ?? posterUrlFor(resolvedSource) ?? '';
   applyMediaOptions(video, options);
   const detachEvents = attachMediaElementEvents(video, emitter, 'hls', options);
 

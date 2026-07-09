@@ -220,18 +220,40 @@ test('fastpix: direct .m3u8 stream URL goes to generic HLS resolver', () => {
 // ---------------------------------------------------------------------------
 // JW Player
 // ---------------------------------------------------------------------------
-test('jwplayer: cdn.jwplayer.com players URL', () => {
+test('jwplayer: cdn.jwplayer.com players URL → HLS', () => {
   const r = resolveSource('https://cdn.jwplayer.com/players/AbCd1234-EfGh5678.html');
   assert.equal(r.provider, 'jwplayer');
-  assert.equal(r.type, 'iframe');
+  assert.equal(r.type, 'hls');
   assert.equal(r.id, 'AbCd1234');
-  assert.equal(r.embedUrl, 'https://cdn.jwplayer.com/players/AbCd1234-EfGh5678.html');
+  assert.equal(r.src, 'https://cdn.jwplayer.com/manifests/AbCd1234.m3u8');
+  assert.equal(r.poster, 'https://cdn.jwplayer.com/v2/media/AbCd1234/poster.jpg?width=720');
 });
 
-test('jwplayer: content.jwplatform.com players URL', () => {
+test('jwplayer: content.jwplatform.com players URL → HLS', () => {
   const r = resolveSource('https://content.jwplatform.com/players/AbCd1234-EfGh5678.html');
   assert.equal(r.provider, 'jwplayer');
+  assert.equal(r.type, 'hls');
   assert.equal(r.id, 'AbCd1234');
+  assert.equal(r.src, 'https://cdn.jwplayer.com/manifests/AbCd1234.m3u8');
+  assert.equal(r.poster, 'https://cdn.jwplayer.com/v2/media/AbCd1234/poster.jpg?width=720');
+});
+
+test('jwplayer: cdn.jwplayer.com manifest URL', () => {
+  const r = resolveSource('https://cdn.jwplayer.com/manifests/yp34SRmf.m3u8');
+  assert.equal(r.provider, 'jwplayer');
+  assert.equal(r.type, 'hls');
+  assert.equal(r.id, 'yp34SRmf');
+  assert.equal(r.src, 'https://cdn.jwplayer.com/manifests/yp34SRmf.m3u8');
+  assert.equal(r.poster, 'https://cdn.jwplayer.com/v2/media/yp34SRmf/poster.jpg?width=720');
+});
+
+test('jwplayer: content.jwplatform.com manifest URL', () => {
+  const r = resolveSource('https://content.jwplatform.com/manifests/yp34SRmf.m3u8');
+  assert.equal(r.provider, 'jwplayer');
+  assert.equal(r.type, 'hls');
+  assert.equal(r.id, 'yp34SRmf');
+  assert.equal(r.src, 'https://content.jwplatform.com/manifests/yp34SRmf.m3u8');
+  assert.equal(r.poster, 'https://cdn.jwplayer.com/v2/media/yp34SRmf/poster.jpg?width=720');
 });
 
 // ---------------------------------------------------------------------------

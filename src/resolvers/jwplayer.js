@@ -1,8 +1,11 @@
 // Embed parameter reference: https://developer.jwplayer.com/jw-player/docs/developer-guide/getting-started/add-an-html5-player/
-// Handles the documented cdn.jwplayer.com/players/<mediaId>-<playerId>.html
-// and content.jwplatform.com/players/<mediaId>-<playerId>.html iframe shapes.
+// Handles documented URL shapes:
+//   cdn.jwplayer.com/players/<mediaId>-<playerId>.html  (iframe)
+//   cdn.jwplayer.com/manifests/<mediaId>.m3u8           (HLS manifest, direct)
+// plus content.jwplatform.com equivalents for both.
 const JW_HOST_RE = /(^|\.)jwplayer\.com$|(^|\.)jwplatform\.com$/;
-const JW_PATH_RE = /^\/players\/([\w]+)-([\w]+)\.html$/;
+const JW_IFRAME_PATH_RE = /^\/players\/([\w]+)-([\w]+)\.html$/;
+const JW_HLS_PATH_RE = /^\/manifests\/([\w]+)\.m3u8$/;
 
 /**
  * @param {string} url
@@ -18,16 +21,29 @@ export function resolve(url) {
 
   if (!JW_HOST_RE.test(parsed.hostname)) return null;
 
-  const match = parsed.pathname.match(JW_PATH_RE);
-  if (!match) return null;
+  let mediaId;
+  let src;
 
-  const [, mediaId, playerId] = match;
+  const iframeMatch = parsed.pathname.match(JW_IFRAME_PATH_RE);
+  if (iframeMatch) {
+    mediaId = iframeMatch[1];
+    src = `https://cdn.jwplayer.com/manifests/${mediaId}.m3u8`;
+  }
+
+  const hlsMatch = parsed.pathname.match(JW_HLS_PATH_RE);
+  if (hlsMatch) {
+    mediaId = hlsMatch[1];
+    src = parsed.href;
+  }
+
+  if (!mediaId) return null;
 
   return {
     provider: 'jwplayer',
-    type: 'iframe',
+    type: 'hls',
     id: mediaId,
-    embedUrl: `https://cdn.jwplayer.com/players/${mediaId}-${playerId}.html`,
+    src,
+    poster: `https://cdn.jwplayer.com/v2/media/${mediaId}/poster.jpg?width=720`,
     stability: 'stable',
   };
 }

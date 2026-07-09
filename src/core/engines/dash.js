@@ -3,9 +3,11 @@
 // dynamically imported only when a DASH source is actually resolved (see
 // rules.md §1a). A consumer who never uses DASH never downloads it.
 import { applyMediaOptions, attachMediaElementEvents, createMediaControls } from './media-events.js';
+import { posterUrlFor } from '../lazy.js';
 
 export async function createDashEngine(container, resolvedSource, options, emitter) {
   const video = document.createElement('video');
+  video.poster = options.poster ?? resolvedSource.poster ?? posterUrlFor(resolvedSource) ?? '';
   applyMediaOptions(video, options);
   const detachEvents = attachMediaElementEvents(video, emitter, 'dash', options);
 

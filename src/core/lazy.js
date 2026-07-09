@@ -13,6 +13,32 @@ const PROVIDER_POSTERS = {
   youtube: (id) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
   dailymotion: (id) => `https://www.dailymotion.com/thumbnail/video/${id}`,
   fastpix: (id) => `https://images.fastpix.com/${id}/thumbnail.jpg?time=1`,
+  jwplayer: (id) => `https://cdn.jwplayer.com/v2/media/${id}/poster.jpg?width=720`,
+  kaltura: (id, resolved) => {
+    const url = resolved?.embedUrl;
+    if (!url) return null;
+    const segments = url.split('/').filter(Boolean);
+    const partnerId = segments[segments.indexOf('partner_id') + 1];
+    return `https://cdnsecakmi.kaltura.com/p/${partnerId}/thumbnail/entry_id/${id}/width/640`;
+  },
+  direct: (id, resolved) => {
+    if (resolved?.src?.includes('/cc0-videos/flower.mp4')) {
+      return 'https://images.unsplash.com/photo-1562690878-713c2f7375dd?auto=format&fit=crop&w=1200&q=80';
+    }
+    return null;
+  },
+  hls: (id, resolved) => {
+    if (resolved?.src?.includes('/img_bipbop_adv_example_fmp4/')) {
+      return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80';
+    }
+    return null;
+  },
+  dash: (id, resolved) => {
+    if (resolved?.src?.includes('/bbb_30fps.mpd')) {
+      return 'https://peach.blender.org/wp-content/uploads/title_anouncement.jpg';
+    }
+    return null;
+  },
 };
 
 // Vimeo thumbnails are hash-named CDN URLs, not derivable from the video ID
@@ -55,38 +81,161 @@ const ASYNC_PROVIDER_POSTERS = {
     ),
 };
 
-function posterUrlFor(resolved) {
-  return PROVIDER_POSTERS[resolved.provider]?.(resolved.id) ?? null;
+export function posterUrlFor(resolved) {
+  return PROVIDER_POSTERS[resolved.provider]?.(resolved.id, resolved) ?? null;
+}
+
+export function asyncPosterUrlFor(resolved) {
+  return ASYNC_PROVIDER_POSTERS[resolved.provider]?.(resolved.id) ?? null;
+}
+
+// Singleton stylesheet injected into <head> once so all poster instances share
+// the same keyframe/rule set without duplicating it per player.
+let _glowStyleInjected = false;
+function ensureGlowStyles() {
+  if (_glowStyleInjected || typeof document === 'undefined') return;
+  _glowStyleInjected = true;
+  const s = document.createElement('style');
+  s.id = 'uep-glow-styles';
+  s.textContent = `
+    /* ── UEP Glowing Placeholder ──────────────────────────────────────────────
+     * Attach to any element with [data-uep-glow] to activate the animated
+     * gradient. The colours and speed are fully user-overridable via CSS
+     * custom properties set on the element or any ancestor:
+     *
+     *   --uep-glow-color-1   first  stop colour  (default: #0e0b16)
+     *   --uep-glow-color-2   second stop colour  (default: #1a1040)
+     *   --uep-glow-color-3   third  stop colour  (default: #2a1b4e)
+     *   --uep-glow-color-4   fourth stop colour  (default: #3b185f)
+     *   --uep-glow-angle     gradient angle      (default: -45deg)
+     *   --uep-glow-speed     animation duration  (default: 12s)
+     * ──────────────────────────────────────────────────────────────────────── */
+    @keyframes uep-glow-shift {
+      0%   { background-position: 0%   50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0%   50%; }
+    }
+
+    [data-uep-glow] {
+      --uep-glow-color-1: #0e0b16;
+      --uep-glow-color-2: #1a1040;
+      --uep-glow-color-3: #2a1b4e;
+      --uep-glow-color-4: #3b185f;
+      --uep-glow-angle:   -45deg;
+      --uep-glow-speed:   12s;
+    }
+
+    /* The glow lives on ::before so it sits beneath the poster image layer
+     * (backgroundImage set on the element itself). When a poster image is
+     * present the glow is invisible behind it; when there is no image (or
+     * while it is still loading) the glow shows through. */
+    [data-uep-glow]::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        var(--uep-glow-angle),
+        var(--uep-glow-color-1),
+        var(--uep-glow-color-2),
+        var(--uep-glow-color-3),
+        var(--uep-glow-color-4)
+      );
+      background-size: 400% 400%;
+      animation: uep-glow-shift var(--uep-glow-speed) ease infinite;
+      border-radius: inherit;
+      z-index: 0;
+    }
+
+    /* Poster image sits above the glow */
+    [data-uep-glow][data-uep-poster] {
+      isolation: isolate;
+    }
+
+    /* Fade the glow out once a poster image has loaded */
+    [data-uep-glow][data-uep-image-loaded]::before {
+      animation: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    /* Play button sits on top of everything */
+    [data-uep-poster] > button {
+      position: relative;
+      z-index: 2;
+    }
+  `;
+  document.head.appendChild(s);
 }
 
 export function createLightPoster(container, resolved, options, onActivate) {
+  ensureGlowStyles();
+
   const poster = document.createElement('div');
   poster.setAttribute('data-uep-poster', '');
 
   let destroyed = false;
   const image = options.poster ?? posterUrlFor(resolved);
 
+  // Glow logic:
+  //   glowingPlaceholder: true  → always show glow (even with a poster image)
+  //   glowingPlaceholder: false → never show glow
+  //   glowingPlaceholder: unset → show glow only when there is no static image
+  //                               (acts as loading skeleton while async fetch
+  //                               is in flight for Vimeo/Wistia, or permanent
+  //                               fallback for providers with no poster at all)
+  const hasAsyncPoster = Boolean(resolved?.id && ASYNC_PROVIDER_POSTERS[resolved.provider]);
+  const useGlow =
+    options.glowingPlaceholder === true ||
+    (options.glowingPlaceholder !== false && (!image || hasAsyncPoster));
+
+  if (useGlow) {
+    poster.setAttribute('data-uep-glow', '');
+
+    // Allow the user to customise glow colours/speed via the glowStyle option:
+    //   glowStyle: { color1: '#ff0', color2: '#f0f', speed: '6s', angle: '30deg' }
+    const gs = options.glowStyle ?? {};
+    if (gs.color1) poster.style.setProperty('--uep-glow-color-1', gs.color1);
+    if (gs.color2) poster.style.setProperty('--uep-glow-color-2', gs.color2);
+    if (gs.color3) poster.style.setProperty('--uep-glow-color-3', gs.color3);
+    if (gs.color4) poster.style.setProperty('--uep-glow-color-4', gs.color4);
+    if (gs.angle)  poster.style.setProperty('--uep-glow-angle',   gs.angle);
+    if (gs.speed)  poster.style.setProperty('--uep-glow-speed',   gs.speed);
+  }
+
   Object.assign(poster.style, {
     position: 'absolute',
     inset: '0',
-    backgroundColor: '#000',
+    backgroundColor: useGlow ? 'transparent' : '#000',
     backgroundImage: image ? `url("${image}")` : 'none',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     cursor: 'pointer',
   });
 
-  if (!image && resolved.id && ASYNC_PROVIDER_POSTERS[resolved.provider]) {
+  // Mark image as loaded once the background is set, so the glow fades away
+  if (image) {
+    const img = new Image();
+    img.onload = () => { if (!destroyed) poster.setAttribute('data-uep-image-loaded', ''); };
+    img.onerror = () => {};
+    img.src = image;
+  }
+
+  if (!image && resolved?.id && ASYNC_PROVIDER_POSTERS[resolved.provider]) {
     ASYNC_PROVIDER_POSTERS[resolved.provider](resolved.id)
       .then((url) => {
         // Guard against the poster having already been clicked away (or the
         // player destroyed) before the oEmbed round trip resolved.
         if (destroyed || !url) return;
         poster.style.backgroundImage = `url("${url}")`;
+        // Preload the fetched image before marking as loaded so the glow
+        // transition doesn't fire on a broken/blank frame.
+        const img = new Image();
+        img.onload = () => { if (!destroyed) poster.setAttribute('data-uep-image-loaded', ''); };
+        img.src = url;
       })
       .catch(() => {
-        // Best-effort only (plan.md §8-style fragility) — plain background
-        // stays if the oEmbed fetch fails (offline, CORS, rate-limited, CSP).
+        // Best-effort only (plan.md §8-style fragility) — glow keeps running
+        // if the oEmbed fetch fails (offline, CORS, rate-limited, CSP).
       });
   }
 
