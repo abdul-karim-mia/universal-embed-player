@@ -8,3 +8,8 @@ reference/
 .env.local
 coverage/
 .claude
+
+# Internal working docs — not for the public repo
+plan.md
+rules.md
+demo.html

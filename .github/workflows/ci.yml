@@ -24,10 +24,10 @@ jobs:
       - name: Build type declarations (devDependency-only, never shipped as a runtime dep)
         run: npm run build:types
 
-      - name: Enforce zero-dependency ceiling (rules.md §1a)
+      - name: Enforce zero-dependency ceiling
         run: |
           DEP_COUNT=$(node -e "console.log(Object.keys(require('./package.json').dependencies || {}).length)")
           if [ "$DEP_COUNT" -ne 0 ]; then
-            echo "package.json 'dependencies' must stay empty — found $DEP_COUNT entries. See rules.md §1a."
+            echo "package.json 'dependencies' must stay empty — found $DEP_COUNT entries."
             exit 1
           fi

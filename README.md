@@ -14,32 +14,20 @@ createPlayer('#container', { url: 'https://drive.google.com/file/d/XXXX/view' })
 No proxy server. No client-side dependency except the two libraries
 (`hls.js`, `dash.js`) that only load when you actually use HLS/DASH.
 
-➡️ **Live demo:** open [`demo.html`](demo.html) with any static server
-(e.g. the VS Code "Live Server" extension) — no build step required.
-
 ---
-
-## Why
-
-Every "any URL → embed" tool on npm today either drags in polyfills and
-utility libraries it doesn't need, or delegates each provider to its own
-separate npm package. This one doesn't. See [`plan.md`](plan.md) §0.1–§0.2
-for the competitive research and the reasoning behind the near-zero
-dependency footprint, and [`rules.md`](rules.md) for the engineering rules
-that keep it that way.
 
 ## Supported sources
 
 | Category | Providers |
 |---|---|
 | Public social video | YouTube (standard, Shorts, unlisted, live), Vimeo (incl. private-hash links), Dailymotion |
-| Professional hosting | Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura (Dacast deferred — see plan.md §0.4) |
+| Professional hosting | Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura |
 | Cloud storage | Google Drive, Dropbox, OneDrive, iCloud (experimental — see caveats below) |
 | Raw infrastructure | HLS (`.m3u8`), DASH (`.mpd`), MP4/WebM/Ogg/MOV |
 
 Mux, Bunny Stream, and Cloudflare Stream's own manifest URLs need no special
 resolver at all — paste the `.m3u8` directly and the generic HLS engine
-handles it (see plan.md §0.1).
+handles it.
 
 ## Install
 
@@ -105,8 +93,7 @@ import { Player } from 'universal-embed-player/vue';
 
 ### Thumbnail-first ("light") mode
 
-Defers all engine/script loading until the user clicks play — the same
-pattern `lite-youtube-embed` uses:
+Defers all engine/script loading until the user clicks play:
 
 ```js
 createPlayer('#container', { url, light: true });
@@ -156,13 +143,12 @@ resolution logic without mounting a player.
   stripped — same-origin policy blocks it categorically. The interaction
   shield only intercepts clicks and forwards real commands via each
   provider's documented postMessage protocol; it's only mounted where a
-  protocol adapter exists (currently YouTube and Vimeo). Full details in
-  [`plan.md`](plan.md) §7.
+  protocol adapter exists (currently YouTube and Vimeo).
 - **Google Drive / Dropbox / OneDrive** resolvers are simple, documented URL
   rewrites and can break if a provider changes its URL scheme.
 - **iCloud is experimental.** Its share links usually require a JS-executed
   API call to resolve to a real asset URL, not a static redirect — this is
-  the resolver most likely to fail. See plan.md §8 and §13.
+  the resolver most likely to fail.
 
 ## Development
 
@@ -170,14 +156,9 @@ resolution logic without mounting a player.
 npm test          # runs the full suite via Node's built-in test runner (zero test-framework dependency)
 ```
 
-All resolver/controller/engine code lives under [`src/`](src/); see
-[`rules.md`](rules.md) for the file-layout and contribution rules (one
-provider per file, pure resolver functions, dependency ceiling, etc.).
-
-## Project docs
-
-- [`plan.md`](plan.md) — architecture, provider matrix, milestones, competitive research
-- [`rules.md`](rules.md) — engineering rules this repo is held to
+All resolver/controller/engine code lives under [`src/`](src/) — one
+provider per file in `src/resolvers/`, pure functions with no DOM or network
+access during URL matching.
 
 ## License
 
