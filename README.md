@@ -1,18 +1,18 @@
 # universal-embed-player
 
 A framework-agnostic, **dependency-free** video embed resolver and player.
-Feed it one URL — YouTube, Vimeo, Google Drive, Dropbox, OneDrive, iCloud,
-HLS, DASH, or a plain MP4 — and it detects the host, resolves the real
-playable source, and mounts a unified player with one API.
+Feed it one URL — YouTube, Vimeo, Dropbox, HLS, DASH, or a plain MP4 — and
+it detects the host, resolves the real playable source, and mounts a
+unified player with one API.
 
 ```js
 import { createPlayer } from 'universal-embed-player';
 
-createPlayer('#container', { url: 'https://drive.google.com/file/d/XXXX/view' });
+createPlayer('#container', { url: 'https://www.dropbox.com/scl/fi/XXXX/video.mp4?dl=0' });
 ```
 
 No proxy server. No client-side dependency except the two libraries
-(`hls.js`, `dash.js`) that only load when you actually use HLS/DASH.
+(`hls.js`, `dashjs`) that only load when you actually use HLS/DASH.
 
 ---
 
@@ -22,7 +22,7 @@ No proxy server. No client-side dependency except the two libraries
 |---|---|
 | Public social video | YouTube (standard, Shorts, unlisted, live), Vimeo (incl. private-hash links), Dailymotion |
 | Professional hosting | Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura |
-| Cloud storage | Google Drive, Dropbox, OneDrive, iCloud (experimental — see caveats below) |
+| Cloud storage | Dropbox |
 | Raw infrastructure | HLS (`.m3u8`), DASH (`.mpd`), MP4/WebM/Ogg/MOV |
 
 Mux, Bunny Stream, and Cloudflare Stream's own manifest URLs need no special
@@ -40,7 +40,7 @@ actually use:
 
 ```bash
 npm install hls.js   # only if you'll play .m3u8 sources on non-Safari browsers
-npm install dash.js   # only if you'll play .mpd sources
+npm install dashjs   # only if you'll play .mpd sources
 ```
 
 React and Vue are also optional peer dependencies, needed only if you import
@@ -153,11 +153,8 @@ resolution logic without mounting a player.
   shield only intercepts clicks and forwards real commands via each
   provider's documented postMessage protocol; it's only mounted where a
   protocol adapter exists (currently YouTube and Vimeo).
-- **Google Drive / Dropbox / OneDrive** resolvers are simple, documented URL
-  rewrites and can break if a provider changes its URL scheme.
-- **iCloud is experimental.** Its share links usually require a JS-executed
-  API call to resolve to a real asset URL, not a static redirect — this is
-  the resolver most likely to fail.
+- **Dropbox** resolver is a simple, documented URL rewrite and can break if
+  the provider changes its URL scheme.
 
 ## Development
 

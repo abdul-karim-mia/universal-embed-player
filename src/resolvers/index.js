@@ -6,10 +6,7 @@ import { resolve as cloudflareStream } from './cloudflare-stream.js';
 import { resolve as fastpix } from './fastpix.js';
 import { resolve as jwplayer } from './jwplayer.js';
 import { resolve as kaltura } from './kaltura.js';
-import { resolve as gdrive } from './gdrive.js';
 import { resolve as dropbox } from './dropbox.js';
-import { resolve as onedrive } from './onedrive.js';
-import { resolve as icloud } from './icloud.js';
 import { resolve as direct } from './direct.js';
 
 // Host-specific resolvers run first; the extension-based `direct` resolver
@@ -23,10 +20,7 @@ export const RESOLVERS = [
   fastpix,
   jwplayer,
   kaltura,
-  gdrive,
   dropbox,
-  onedrive,
-  icloud,
   direct,
 ];
 

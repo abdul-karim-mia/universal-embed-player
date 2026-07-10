@@ -2,9 +2,12 @@
  * @typedef {'native'|'iframe'|'hls'|'dash'} SourceType
  *
  * @typedef {Object} ResolvedSource
- * @property {string} provider           - resolver id, e.g. 'youtube', 'gdrive'
+ * @property {string} provider           - resolver id, e.g. 'youtube', 'dropbox'
  * @property {SourceType} type           - which engine should mount this source
  * @property {string} [src]              - direct playable URL (native/hls/dash)
+ * @property {string} [mimeType]          - explicit MIME type for native sources whose real type a
+ *   browser can't safely infer (e.g. Dropbox's raw=1 links mislabel Content-Type); set as a
+ *   <source type> so the browser doesn't have to guess and skip the resource
  * @property {string} [embedUrl]         - iframe URL (iframe type only)
  * @property {string} [poster]           - deterministic poster image URL from the resolver
  * @property {string} [id]               - extracted provider-native ID, if any

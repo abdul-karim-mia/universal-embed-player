@@ -3,7 +3,7 @@
 Thanks for looking at `universal-embed-player`. Before opening a PR:
 
 1. **Dependency ceiling:** `dependencies` in `package.json` must stay `{}`.
-   `hls.js`/`dash.js` are the only two allowed runtime libraries, and only as
+   `hls.js`/`dashjs` are the only two allowed runtime libraries, and only as
    optional peer dependencies, dynamically imported at the point of use.
    `devDependencies` (TypeScript, react/vue for type-checking, etc.) are
    unrestricted since they never ship to consumers.

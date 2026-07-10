@@ -11,21 +11,27 @@ export async function createDashEngine(container, resolvedSource, options, emitt
   applyMediaOptions(video, options);
   const detachEvents = attachMediaElementEvents(video, emitter, 'dash', options);
 
-  let dashModule;
+  let dashjs;
   try {
-    dashModule = await import('dash.js');
+    const mod = await import('dashjs');
+    // dashjs ships only a UMD/CJS build (no ESM `exports` field), so where
+    // `MediaPlayer` ends up on the imported namespace varies by loader: some
+    // expose it directly, others nest it under `.default` or a named
+    // `.dashjs` export (e.g. jsdelivr's `+esm` transform does the latter).
+    dashjs = mod.MediaPlayer ? mod : (mod.default?.MediaPlayer ? mod.default : mod.dashjs);
+    if (!dashjs?.MediaPlayer) throw new Error('dashjs module has no MediaPlayer export');
   } catch {
     emitter.emit('error', {
       code: 'DASH_JS_NOT_INSTALLED',
-      message: 'DASH playback requires dash.js. Run: npm install dash.js (optional peer dependency, see plan.md §0.2).',
+      message: 'DASH playback requires dashjs. Run: npm install dashjs (optional peer dependency, see plan.md §0.2).',
       provider: 'dash',
     });
     container.append(video);
     return { ...createMediaControls(video, emitter, 'dash'), destroy: () => finalize(video, detachEvents, null) };
   }
 
-  const player = dashModule.MediaPlayer().create();
-  player.on(dashModule.MediaPlayer.events.ERROR, (event) => {
+  const player = dashjs.MediaPlayer().create();
+  player.on(dashjs.MediaPlayer.events.ERROR, (event) => {
     emitter.emit('error', {
       code: 'DASH_PLAYBACK_ERROR',
       message: event?.error?.message ?? 'Fatal dash.js error',
@@ -36,10 +42,25 @@ export async function createDashEngine(container, resolvedSource, options, emitt
 
   container.append(video);
 
+  // dashjs manages this <video> element internally (ABR, buffer/catch-up
+  // logic) and expects control through its own player API rather than direct
+  // element manipulation — seeking, rate, and volume set on `video` directly
+  // can be silently overridden by dashjs on its next internal tick. play/pause
+  // stay on the raw element so autoplay-rejection promise handling (below)
+  // keeps working the same way every other engine reports it.
+  const controls = createMediaControls(video, emitter, 'dash');
+
   return {
-    ...createMediaControls(video, emitter, 'dash'),
+    ...controls,
+    seekTo: (seconds) => player.seek(seconds),
+    setVolume: (volume) => player.setVolume(clamp01(volume)),
+    setPlaybackRate: (rate) => player.setPlaybackRate(rate),
     destroy: () => finalize(video, detachEvents, player),
   };
+}
+
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
 }
 
 function finalize(video, detachEvents, player) {

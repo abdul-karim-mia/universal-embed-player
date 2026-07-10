@@ -1,7 +1,7 @@
 {
   "name": "universal-embed-player",
   "version": "0.1.0",
-  "description": "Framework-agnostic, dependency-free video embed resolver: one URL from any host (YouTube, Vimeo, Google Drive, Dropbox, OneDrive, HLS, DASH...) in, one unified player out.",
+  "description": "Framework-agnostic, dependency-free video embed resolver: one URL from any host (YouTube, Vimeo, Dropbox, HLS, DASH...) in, one unified player out.",
   "type": "module",
   "main": "src/index.js",
   "exports": {
@@ -34,7 +34,7 @@
   },
   "types": "types/index.d.ts",
   "peerDependencies": {
-    "dash.js": ">=4.7.0",
+    "dashjs": ">=4.7.0",
     "hls.js": "^1.6.16",
     "react": ">=18.0.0",
     "vue": ">=3.0.0"
@@ -43,7 +43,7 @@
     "hls.js": {
       "optional": true
     },
-    "dash.js": {
+    "dashjs": {
       "optional": true
     },
     "react": {
@@ -74,13 +74,11 @@
     "vimeo",
     "hls",
     "dash",
-    "google-drive",
-    "dropbox",
-    "onedrive"
+    "dropbox"
   ],
   "devDependencies": {
     "@types/react": "^19.2.17",
-    "dash.js": "^4.0.0",
+    "dashjs": "^4.7.4",
     "hls.js": "^1.6.16",
     "react": "^19.2.7",
     "typescript": "7.0.2",

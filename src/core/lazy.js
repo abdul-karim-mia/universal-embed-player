@@ -27,12 +27,6 @@ const PROVIDER_POSTERS = {
     }
     return null;
   },
-  hls: (id, resolved) => {
-    if (resolved?.src?.includes('/img_bipbop_adv_example_fmp4/') || resolved?.src?.includes('/x36xhqq/')) {
-      return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80';
-    }
-    return null;
-  },
   dash: (id, resolved) => {
     if (resolved?.src?.includes('/bbb_30fps.mpd')) {
       return 'https://peach.blender.org/wp-content/uploads/title_anouncement.jpg';

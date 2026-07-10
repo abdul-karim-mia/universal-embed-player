@@ -274,22 +274,6 @@ test('kaltura: rejects a URL missing a required param', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Google Drive
-// ---------------------------------------------------------------------------
-test('gdrive: /file/d/<id>/view share link', () => {
-  const r = resolveSource('https://drive.google.com/file/d/1A2B3C4D5E6F/view?usp=sharing');
-  assert.equal(r.provider, 'gdrive');
-  assert.equal(r.type, 'native');
-  assert.equal(r.id, '1A2B3C4D5E6F');
-  assert.equal(r.src, 'https://drive.google.com/uc?export=view&id=1A2B3C4D5E6F');
-});
-
-test('gdrive: legacy open?id= link', () => {
-  const r = resolveSource('https://drive.google.com/open?id=1A2B3C4D5E6F');
-  assert.equal(r.id, '1A2B3C4D5E6F');
-});
-
-// ---------------------------------------------------------------------------
 // Dropbox
 // ---------------------------------------------------------------------------
 test('dropbox: /s/ share link rewrites dl=0 to raw=1', () => {
@@ -304,32 +288,6 @@ test('dropbox: newer /scl/fi/ share link shape', () => {
   assert.equal(r.provider, 'dropbox');
   assert.match(r.src, /raw=1/);
   assert.doesNotMatch(r.src, /dl=0/);
-});
-
-// ---------------------------------------------------------------------------
-// OneDrive
-// ---------------------------------------------------------------------------
-test('onedrive: /embed path rewritten to /download', () => {
-  const r = resolveSource('https://onedrive.live.com/embed?cid=ABC&resid=ABC%21123');
-  assert.equal(r.provider, 'onedrive');
-  assert.equal(r.type, 'native');
-  assert.match(r.src, /\/download\?/);
-  assert.equal(r.stability, 'stable');
-});
-
-test('onedrive: 1drv.ms short link passes through as experimental', () => {
-  const r = resolveSource('https://1drv.ms/v/s!AbCdEfG');
-  assert.equal(r.provider, 'onedrive');
-  assert.equal(r.stability, 'experimental');
-});
-
-// ---------------------------------------------------------------------------
-// iCloud (experimental)
-// ---------------------------------------------------------------------------
-test('icloud: iclouddrive share link is recognized as experimental', () => {
-  const r = resolveSource('https://www.icloud.com/iclouddrive/abc123XYZ');
-  assert.equal(r.provider, 'icloud');
-  assert.equal(r.stability, 'experimental');
 });
 
 // ---------------------------------------------------------------------------
