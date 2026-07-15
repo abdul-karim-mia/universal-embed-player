@@ -90,7 +90,7 @@ test('vimeo: standard video URL', () => {
   assert.equal(r.id, '76979871');
   assert.equal(
     r.embedUrl,
-    'https://player.vimeo.com/video/76979871?byline=0&portrait=0&title=0&controls=0&playsinline=1',
+    'https://player.vimeo.com/video/76979871?byline=0&portrait=0&title=0&controls=0&badge=0&playsinline=1',
   );
 });
 
@@ -101,6 +101,7 @@ test('vimeo: applies brand-minimization embed params', () => {
   assert.equal(params.get('portrait'), '0');
   assert.equal(params.get('title'), '0');
   assert.equal(params.get('controls'), '0');
+  assert.equal(params.get('badge'), '0');
 });
 
 test('vimeo: private-hash share URL (path form vimeo.com/ID/HASH)', () => {

@@ -44,6 +44,11 @@ export function resolve(url) {
   embed.searchParams.set('portrait', '0');
   embed.searchParams.set('title', '0');
   embed.searchParams.set('controls', '0');
+  // Suppresses Vimeo's curation badges (e.g. the "Staff Pick" sticker),
+  // which default to visible (help.vimeo.com/hc/en-us/articles/
+  // 12426260232977-About-Player-Parameters) and render as a corner overlay
+  // independent of the controls=0/byline=0 params above.
+  embed.searchParams.set('badge', '0');
   // Plays inline on iOS instead of forcing fullscreen (same reasoning as the
   // YouTube resolver — cross-checked against Plyr's iOS handling).
   embed.searchParams.set('playsinline', '1');

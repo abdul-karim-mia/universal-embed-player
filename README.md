@@ -287,6 +287,17 @@ component mounted into a `<div>`.
   shield only intercepts clicks and forwards real commands via each
   provider's documented postMessage protocol; it's only mounted where a
   protocol adapter exists (currently YouTube and Vimeo).
+  - One concrete symptom: on first load you may briefly see **two loading
+    indicators** for iframe sources — this library's own spinner (opt out
+    with `loadingSpinner: false`) plus the provider's own internal loading
+    UI rendered inside their iframe, which we have no way to reach or
+    suppress. Our spinner hides itself as soon as the provider reports
+    `ready`/`play`/progress, but the overlap during that initial window is
+    unavoidable for any iframe-based source.
+  - Vimeo specifically: `controls=0` is only honored on Plus/Pro/Business
+    accounts (sent regardless — harmless no-op otherwise, the interaction
+    shield still covers clicks), and curation badges (e.g. "Staff Pick")
+    are suppressed via the documented `badge=0` embed param.
 - **Dropbox** resolver is a simple, documented URL rewrite and can break if
   the provider changes its URL scheme.
 - **Dailymotion is not supported.** Its current embed endpoint
