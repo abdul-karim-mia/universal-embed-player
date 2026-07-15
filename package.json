@@ -1,6 +1,6 @@
 {
   "name": "universal-embed-player",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-agnostic, dependency-free video embed resolver: one URL from any host (YouTube, Vimeo, Dropbox, HLS, DASH...) in, one unified player out.",
   "type": "module",
   "main": "src/index.js",
