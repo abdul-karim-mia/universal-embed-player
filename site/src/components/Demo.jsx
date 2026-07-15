@@ -26,27 +26,20 @@ export function Demo() {
   const [url, setUrl] = useState(PROVIDERS[0].url);
   const [player, setPlayer] = useState(null);
   const [resolved, setResolved] = useState(null);
-  const [events, setEvents] = useState([]);
   const [ready, setReady] = useState(false);
   const [opts, setOpts] = useState({
     controls: true, shield: true, light: false, autoplay: false,
     muted: false, loop: false, centerPlayButton: false,
-    posterEnabled: true, poster: '',
+    posterEnabled: false, poster: 'https://picsum.photos/1280/720',
     glowing: true, gc1: '#0e0b16', gc2: '#1a1040', gc3: '#2a1b4e', gc4: '#3b185f', gs: '12',
     primary: '#6d5efc', accent: '#ffffff', font: '',
     barBg: '#141220', barOpacity: '0.55', barBlur: '10', barRadius: '999px', barMargin: '8px',
     btnSize: '26px', sliderH: '3px', timeSize: '11px',
-    volume: '0.8', volumeKey: '', videoSize: 'contain', rates: '0.5, 1, 1.5, 2',
+    volume: '0.8', volumeKey: '', videoSize: 'cover', rates: '0.5, 1, 1.5, 2',
   });
 
   const mountRef = useRef(null);
-  const logRef = useRef(null);
   const playerRef = useRef(null);
-
-  const addEvent = useCallback((type, data) => {
-    const entry = { time: new Date().toLocaleTimeString(), type, data: typeof data === 'object' ? JSON.stringify(data) : String(data) };
-    setEvents((prev) => [...prev.slice(-49), entry]);
-  }, []);
 
   const destroyPlayer = useCallback(() => {
     if (playerRef.current) {
@@ -71,12 +64,7 @@ export function Demo() {
       const result = resolveSource(targetUrl);
       setResolved(result);
 
-      if (!result) {
-        addEvent('error', 'Unable to resolve source from this URL');
-        return;
-      }
-
-      addEvent('resolve', `${result.type} → ${result.engine}`);
+      if (!result) return;
 
       const theme = {};
       if (opts.primary) theme.primaryColor = opts.primary;
@@ -114,48 +102,38 @@ export function Demo() {
         volumeKey: opts.volumeKey || undefined,
         videoSize: opts.videoSize || undefined,
         playbackRates: opts.rates.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n)),
-        onEvent: (event) => addEvent(event.type, event),
       });
       playerRef.current = instance;
       setPlayer(instance);
 
       await instance.ready;
       setReady(true);
-      addEvent('ready', 'Player is ready');
-    } catch (err) {
-      addEvent('error', err.message);
+    } catch {
+      // resolveSource/createPlayer failed; resolved stays null and the placeholder shows.
     }
-  }, [url, opts, addEvent, destroyPlayer]);
+  }, [url, opts, destroyPlayer]);
 
   useEffect(() => {
     return () => destroyPlayer();
   }, [destroyPlayer]);
 
-  useEffect(() => {
-    if (logRef.current) {
-      logRef.current.scrollTop = logRef.current.scrollHeight;
-    }
-  }, [events]);
-
   const switchProvider = (id) => {
     destroyPlayer();
-    setEvents([]);
     const p = PROVIDERS.find(x => x.id === id);
     setActiveId(id);
     setUrl(p?.url || '');
   };
 
   useEffect(() => {
-    if (url && !playerRef.current) loadPlayer();
-  }, [url]);
+    if (!url) return;
+    const timer = setTimeout(() => { loadPlayer(); }, 200);
+    return () => clearTimeout(timer);
+  }, [url, opts]);
 
   const callApi = (method, ...args) => {
     if (playerRef.current && playerRef.current[method]) {
-      const result = playerRef.current[method](...args);
-      addEvent('api', `${method}(${args.map(a => typeof a === 'string' ? `'${a}'` : JSON.stringify(a)).join(', ')})`);
-      return result;
+      return playerRef.current[method](...args);
     }
-    addEvent('warn', `Player not ready for ${method}()`);
   };
 
   const updateOpt = (key, value) => {
@@ -270,7 +248,7 @@ export function Demo() {
                 </select>
               </label>
               <label className="demo-api-label">Size
-                <select className="demo-api-select" id="api-size" defaultValue="contain" onChange={(e) => { if (player) callApi('setVideoSize', e.target.value); }}>
+                <select className="demo-api-select" id="api-size" defaultValue="cover" onChange={(e) => { if (player) callApi('setVideoSize', e.target.value); }}>
                   <option value="contain">Fit</option>
                   <option value="cover">Fill</option>
                   <option value="fill">Stretch</option>
@@ -292,19 +270,10 @@ export function Demo() {
 
             <div className="glass" style={{ padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <h4 style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>Event Log</h4>
-                <button className="demo-quick-btn" onClick={() => setEvents([])}>Clear</button>
+                <h4 style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>Generated Code</h4>
+                <button className="demo-quick-btn" onClick={() => navigator.clipboard.writeText(generateCode())}>Copy Code</button>
               </div>
-              <div className="demo-event-log" ref={logRef} style={{ maxHeight: '100px' }}>
-                {events.length === 0 && <span style={{ color: 'var(--text-dark)', fontSize: '0.78rem' }}>No events yet.</span>}
-                {events.map((e, i) => (
-                  <div key={i} className="demo-event-entry">
-                    <span className="event-time">{e.time}</span>
-                    <span className="event-type">{e.type}</span>
-                    <span className="event-data">{e.data}</span>
-                  </div>
-                ))}
-              </div>
+              <pre className="demo-code-block">{generateCode()}</pre>
             </div>
           </div>
 
@@ -485,10 +454,7 @@ export function Demo() {
             </div>
 
             <div style={{ marginTop: '16px' }}>
-              <h4 style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: '0.85rem', margin: '0 0 8px', color: 'var(--text-muted)' }}>Generated Code</h4>
-              <pre className="demo-code-block">{generateCode()}</pre>
-              <button className="demo-quick-btn" style={{ marginTop: '8px' }} onClick={() => navigator.clipboard.writeText(generateCode())}>Copy Code</button>
-              <button className="demo-btn" style={{ marginLeft: '8px' }} onClick={() => loadPlayer()}>Apply & Load</button>
+              <button className="demo-btn" onClick={() => loadPlayer()}>Apply & Load</button>
             </div>
           </div>
         </div>

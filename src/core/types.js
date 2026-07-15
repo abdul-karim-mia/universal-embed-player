@@ -29,9 +29,27 @@
 
 /**
  * @typedef {Object} PlayerTheme
- * @property {string} [primaryColor]
- * @property {string} [accentColor]
- * @property {string} [fontFamily]
+ * @property {string} [primaryColor] - CSS var --uep-primary-color, default #6d5efc
+ * @property {string} [accentColor] - CSS var --uep-accent-color, default #ffffff
+ * @property {string} [fontFamily] - CSS var --uep-font-family, default system-ui, sans-serif
+ * @property {string} [barBackground] - CSS var --uep-bar-bg, default rgba(20, 18, 32, 0.55)
+ * @property {string} [barRadius] - CSS var --uep-bar-radius, default 999px
+ * @property {string} [barBlur] - CSS var --uep-bar-blur, default 10px
+ * @property {string} [barPadding] - CSS var --uep-bar-padding, default 5px 10px
+ * @property {string} [barMargin] - CSS var --uep-bar-margin, default 8px
+ * @property {string} [buttonSize] - CSS var --uep-btn-size, default 26px
+ * @property {string} [sliderHeight] - CSS var --uep-slider-height, default 3px
+ * @property {string} [timeFontSize] - CSS var --uep-time-size, default 11px
+ */
+
+/**
+ * @typedef {Object} GlowStyle
+ * @property {string} [color1] - first gradient stop, default #0e0b16
+ * @property {string} [color2] - second gradient stop, default #1a1040
+ * @property {string} [color3] - third gradient stop, default #2a1b4e
+ * @property {string} [color4] - fourth gradient stop, default #3b185f
+ * @property {string} [angle] - gradient angle, default -45deg
+ * @property {string} [speed] - animation duration, default 12s
  */
 
 /**
@@ -49,6 +67,8 @@
  * @property {boolean} [controls]
  * @property {boolean} [light] - thumbnail-first mode toggle; defers engine mounting until clicked
  * @property {string} [poster] - custom poster image URL; falls back to a provider default if omitted (see core/lazy.js)
+ * @property {boolean} [glowingPlaceholder] - light mode only. true always shows the animated glow (even over a poster), false never shows it, unset shows it only while there's no static poster image yet. Vanilla createPlayer only — not forwarded by the React/Vue/Svelte/Web Component adapters.
+ * @property {GlowStyle} [glowStyle] - light mode only. Overrides the glow gradient's colors/angle/speed (see core/lazy.js). Same vanilla-only caveat as glowingPlaceholder.
  * @property {boolean} [autoplay]
  * @property {boolean} [muted]
  * @property {boolean} [loop]

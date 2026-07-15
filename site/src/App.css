@@ -337,7 +337,7 @@ code {
 
 /* Frameworks */
 .section-frameworks { padding: 100px 0; border-top: 1px solid var(--border); }
-.frameworks-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.frameworks-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
 .framework-card { padding: 32px; display: flex; flex-direction: column; }
 .framework-tag {
   display: inline-block; align-self: flex-start;
@@ -490,14 +490,6 @@ code {
   max-height: 160px; overflow-y: auto; line-height: 1.4;
 }
 
-.demo-event-log {
-  max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
-  font-family: var(--font-mono); font-size: 0.75rem;
-}
-.demo-event-entry { padding: 4px 8px; border-radius: 4px; background: rgba(255,255,255,0.02); color: var(--text-muted); }
-.demo-event-entry .event-time { color: var(--text-dark); margin-right: 8px; }
-.demo-event-entry .event-type { color: var(--accent); margin-right: 8px; }
-.demo-event-entry .event-data { color: var(--text-main); }
 .demo-tabs { display: flex; gap: 4px; margin-bottom: 16px; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 4px; }
 .demo-tab {
   flex: 1; padding: 8px 16px; border: none; background: none;

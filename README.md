@@ -187,8 +187,22 @@ createPlayer('#container', { url, light: true, poster: 'my.jpg' });   // custom 
 Default posters are only available for providers with a predictable,
 deterministic thumbnail URL (YouTube). Everything else — Vimeo (thumbnails
 are hash-based, not derivable from the ID), professional hosting, cloud
-storage, direct files — shows a plain background unless you pass `poster`
-explicitly.
+storage, direct files — shows an animated glow placeholder instead of a
+plain background unless you pass `poster` explicitly.
+
+That glow (a 4-stop animated gradient) is also available as a deliberate,
+themeable fallback rather than just an absence-of-poster default:
+
+```js
+createPlayer('#container', {
+  url, light: true,
+  glowingPlaceholder: true,   // true: always show, even over a poster · false: never · unset: only while there's no image yet
+  glowStyle: { color1: '#0e0b16', color2: '#1a1040', color3: '#2a1b4e', color4: '#3b185f', angle: '-45deg', speed: '12s' }, // shown values are the defaults
+});
+```
+
+`glowingPlaceholder`/`glowStyle` are vanilla `createPlayer` only — not
+currently forwarded by the React, Vue, Svelte, or Web Component adapters.
 
 ## TypeScript
 
@@ -217,17 +231,40 @@ whenever that type changes.
 | `controls` | `boolean` | `true` | renders the built-in Shadow-DOM control bar |
 | `light` | `boolean` | `false` | thumbnail-first mode — defers engine mounting until clicked |
 | `poster` | `string` | — | custom poster image URL; falls back to a provider default (YouTube) if omitted |
+| `glowingPlaceholder` | `boolean` | — | light-mode only; force the animated glow placeholder on/off. Unset shows it only while there's no poster image (see [Thumbnail-first mode](#thumbnail-first-light-mode) above). Vanilla `createPlayer` only — not forwarded by any framework adapter |
+| `glowStyle` | `{ color1?, color2?, color3?, color4?, angle?, speed? }` | — | light-mode only; overrides the glow gradient's colors/angle/speed. Same vanilla-only caveat as above |
 | `autoplay` / `muted` / `loop` | `boolean` | `false` | |
+| `centerPlayButton` | `boolean` | `false` | custom play/pause button centered over the player |
+| `videoSize` | `'contain' \| 'cover' \| 'fill'` | `'contain'` | video sizing: fit, fill/crop, or stretch |
 | `playbackRates` | `number[]` | `[0.5, 1, 1.5, 2]` | shown in the control bar's rate selector |
 | `volume` | `number` (0–1) | — | overrides `volumeKey`-based persistence |
 | `volumeKey` | `string` | — | persists volume in `localStorage` under this key |
-| `theme` | `{ primaryColor?, accentColor?, fontFamily? }` | — | written as CSS custom properties |
+| `theme` | `PlayerTheme` | — | written as CSS custom properties, see [Theming](#theming) below |
 | `shield` | `boolean` | `true` | interaction shield over controllable iframe sources (YouTube, Vimeo) |
 | `loadingSpinner` | `boolean` | `true` | shows a spinner overlay while the engine mounts and during any `buffering` event |
 | `seo` | `{ name, description?, thumbnailUrl?, uploadDate?, durationSeconds? }` | — | opt-in `VideoObject` JSON-LD, see [Video SEO](#video-seo) |
+| `iframelyKey` | `string` | — | opt-in last-resort fallback via the Iframely API when every built-in resolver returns `null`. Must be Iframely's MD5-hashed **client** key (iframely.com/docs/allow-origins), never your raw private key |
 | `onEvent` | `(event) => void` | — | fires for every unified event type |
 
-Returns `{ play, pause, seekTo, setVolume, setPlaybackRate, on, off, destroy, ready }`.
+Returns `{ play, pause, seekTo, setVolume, setPlaybackRate, setVideoSize, mute, unmute, toggleMute, on, off, destroy, ready }`.
+
+## Theming
+
+`theme` keys are written as CSS custom properties on the player's mount container (they pierce the Shadow DOM boundary, so the control bar picks them up with no re-render needed). Every key is optional; omitted ones fall back to the default below.
+
+| `theme` key | CSS variable | Default |
+|---|---|---|
+| `primaryColor` | `--uep-primary-color` | `#6d5efc` |
+| `accentColor` | `--uep-accent-color` | `#ffffff` |
+| `fontFamily` | `--uep-font-family` | `system-ui, sans-serif` |
+| `barBackground` | `--uep-bar-bg` | `rgba(20, 18, 32, 0.55)` |
+| `barBlur` | `--uep-bar-blur` | `10px` |
+| `barRadius` | `--uep-bar-radius` | `999px` |
+| `barPadding` | `--uep-bar-padding` | `5px 10px` |
+| `barMargin` | `--uep-bar-margin` | `8px` |
+| `buttonSize` | `--uep-btn-size` | `26px` |
+| `sliderHeight` | `--uep-slider-height` | `3px` |
+| `timeFontSize` | `--uep-time-size` | `11px` |
 
 ### `resolveSource(url)`
 

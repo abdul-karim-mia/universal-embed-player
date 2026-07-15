@@ -201,8 +201,8 @@ export function Home({ onNavigate }) {
               {
                 w: 2,
                 icon: <><circle cx="5" cy="6" r="3" /><circle cx="19" cy="6" r="3" /><circle cx="12" cy="18" r="3" /><path d="M5 9v1a2 2 0 0 0 2 2h3" /><path d="M19 9v1a2 2 0 0 1-2 2h-3" /><path d="M12 12v3" /></>,
-                title: 'Framework-Agnostic + React & Vue Adapters',
-                text: <>Works anywhere JavaScript runs &mdash; plain JS, React 18+, Vue 3+. Tree-shakeable subpath exports per resolver mean you only ship what you use. SSR-safe with no-op on server render.</>,
+                title: 'Framework-Agnostic + Official Adapters',
+                text: <>Works anywhere JavaScript runs &mdash; plain JS, React 18+, Vue 3+, Svelte 5+, or a native Web Component with no adapter at all. Tree-shakeable subpath exports per resolver mean you only ship what you use. SSR-safe with no-op on server render.</>,
               },
               {
                 w: 1,
@@ -292,6 +292,26 @@ function Video() {
                 <pre><code>{`import { Player } from 'universal-embed-player/vue'
 
 <Player url="https://www.youtube.com/watch?v=abc123" />`}</code></pre>
+              </div>
+            </article>
+            <article className="framework-card glass hover-glow" style={{ borderColor: 'rgba(255,62,0,0.15)' }}>
+              <span className="framework-tag" style={{ background: 'rgba(255,62,0,0.1)', color: '#ff3e00', borderColor: 'rgba(255,62,0,0.2)' }}>Svelte</span>
+              <h3>Svelte 5+</h3>
+              <p>Runes-based <code>&lt;Player&gt;</code> component (<code>$props</code>/<code>$state</code>/<code>$effect</code>). Same SSR-safe fallback behavior as React and Vue.</p>
+              <div className="code-snippet">
+                <pre><code>{`import { Player } from 'universal-embed-player/svelte'
+
+<Player url={url} controls />`}</code></pre>
+              </div>
+            </article>
+            <article className="framework-card glass hover-glow" style={{ borderColor: 'rgba(255,179,0,0.15)' }}>
+              <span className="framework-tag" style={{ background: 'rgba(255,179,0,0.1)', color: '#ffb300', borderColor: 'rgba(255,179,0,0.2)' }}>Web Component</span>
+              <h3>Any Framework, or None</h3>
+              <p>Register once and drop in a real custom element &mdash; Angular, plain HTML, or anywhere else the DOM exists.</p>
+              <div className="code-snippet">
+                <pre><code>{`import 'universal-embed-player/webcomponent'
+
+<uep-player url="https://youtu.be/dQw4w9WgXcQ" controls></uep-player>`}</code></pre>
               </div>
             </article>
           </div>
