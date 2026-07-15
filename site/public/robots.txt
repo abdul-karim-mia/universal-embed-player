@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Sitemap: https://universal-embed-player.pages.dev/sitemap.xml
+
+# Disallow crawlers from dev URLs
+User-agent: *
+Disallow: /localhost:*/

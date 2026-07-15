@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveSource } from '../src/index.js';
+import { buildVideoObjectJsonLd, stringifyForScriptTag } from '../src/core/seo.js';
 
 // ---------------------------------------------------------------------------
 // YouTube
@@ -132,20 +133,11 @@ test('vimeo: rejects an injection-shaped hash instead of interpolating it', () =
 });
 
 // ---------------------------------------------------------------------------
-// Dailymotion
+// Dailymotion — explicitly not supported (see README "Supported sources")
 // ---------------------------------------------------------------------------
-test('dailymotion: standard video URL with slug', () => {
+test('dailymotion: URLs are unresolved, not silently guessed', () => {
   const r = resolveSource('https://www.dailymotion.com/video/x7tgd2y_some-title_tech');
-  assert.equal(r.provider, 'dailymotion');
-  assert.equal(r.type, 'iframe');
-  assert.equal(r.id, 'x7tgd2y');
-  assert.equal(r.embedUrl, 'https://geo.dailymotion.com/player.html?video=x7tgd2y');
-});
-
-test('dailymotion: dai.ly short link', () => {
-  const r = resolveSource('https://dai.ly/x7tgd2y');
-  assert.equal(r.provider, 'dailymotion');
-  assert.equal(r.id, 'x7tgd2y');
+  assert.equal(r, null);
 });
 
 // ---------------------------------------------------------------------------
@@ -348,4 +340,52 @@ test('every resolver is a pure function: same input always yields equal output',
   const a = resolveSource(url);
   const b = resolveSource(url);
   assert.deepEqual(a, b);
+});
+
+// ---------------------------------------------------------------------------
+// SEO: VideoObject JSON-LD (core/seo.js)
+// ---------------------------------------------------------------------------
+test('seo: builds a VideoObject with name, description fallback, and duration conversion', () => {
+  const resolved = resolveSource('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  const jsonLd = buildVideoObjectJsonLd(resolved, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', {
+    name: 'My video',
+    uploadDate: '2026-01-15',
+    durationSeconds: 93,
+  });
+  assert.equal(jsonLd['@type'], 'VideoObject');
+  assert.equal(jsonLd.name, 'My video');
+  assert.equal(jsonLd.description, 'My video'); // falls back to name
+  assert.equal(jsonLd.uploadDate, '2026-01-15');
+  assert.equal(jsonLd.duration, 'PT1M33S');
+  assert.equal(jsonLd.embedUrl, resolved.embedUrl);
+});
+
+test('seo: returns null without a name — nothing worth emitting', () => {
+  const resolved = resolveSource('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  assert.equal(buildVideoObjectJsonLd(resolved, 'https://x', { description: 'no name here' }), null);
+  assert.equal(buildVideoObjectJsonLd(resolved, 'https://x', undefined), null);
+});
+
+test('seo: durationSeconds converts across hour/minute/second boundaries', () => {
+  const cases = [
+    [0, 'PT0S'],
+    [5, 'PT5S'],
+    [90, 'PT1M30S'],
+    [3600, 'PT1H'],
+    [3661, 'PT1H1M1S'],
+  ];
+  for (const [seconds, expected] of cases) {
+    const jsonLd = buildVideoObjectJsonLd(null, 'https://x', { name: 't', durationSeconds: seconds });
+    assert.equal(jsonLd.duration, expected);
+  }
+});
+
+test('seo: stringifyForScriptTag escapes "<" to prevent premature script closure', () => {
+  const raw = stringifyForScriptTag({ description: '</script><script>alert(1)</script>' });
+  assert.ok(!raw.includes('</script>'));
+  assert.ok(raw.includes('\\u003c/script>'));
+  // Still valid JSON once unescaped back by the browser's raw-text parsing
+  assert.deepEqual(JSON.parse(raw.replace(/\\u003c/g, '<')), {
+    description: '</script><script>alert(1)</script>',
+  });
 });

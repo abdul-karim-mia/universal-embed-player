@@ -20,7 +20,7 @@ No proxy server. No client-side dependency except the two libraries
 
 | Category | Providers |
 |---|---|
-| Public social video | YouTube (standard, Shorts, unlisted, live), Vimeo (incl. private-hash links), Dailymotion |
+| Public social video | YouTube (standard, Shorts, unlisted, live), Vimeo (incl. private-hash links) |
 | Professional hosting | Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura |
 | Cloud storage | Dropbox |
 | Raw infrastructure | HLS (`.m3u8`), DASH (`.mpd`), MP4/WebM/Ogg/MOV |
@@ -77,8 +77,11 @@ import { Player } from 'universal-embed-player/react';
 <Player url={url} controls theme={{ primaryColor: '#ff0000' }} onEvent={handleEvent} />
 ```
 
-SSR-safe — the player only mounts client-side (inside `useEffect`); a Next.js
-server render just emits the empty container.
+SSR-safe — the interactive player only mounts client-side (inside
+`useEffect`). Unlike the empty-`<div>` server render this used to produce,
+the server-rendered HTML now includes a real poster image linking to `url`
+(see [Video SEO](#video-seo) below) — it's swapped out for the real player
+the moment client-side mounting completes.
 
 ### Vue 3
 
@@ -91,6 +94,8 @@ import { Player } from 'universal-embed-player/vue';
 </template>
 ```
 
+Same SSR behavior as the React adapter above.
+
 ### Thumbnail-first ("light") mode
 
 Defers all engine/script loading until the user clicks play. `light` toggles
@@ -102,10 +107,10 @@ createPlayer('#container', { url, light: true, poster: 'my.jpg' });   // custom 
 ```
 
 Default posters are only available for providers with a predictable,
-deterministic thumbnail URL (YouTube, Dailymotion). Everything else — Vimeo
-(thumbnails are hash-based, not derivable from the ID), professional
-hosting, cloud storage, direct files — shows a plain background unless you
-pass `poster` explicitly.
+deterministic thumbnail URL (YouTube). Everything else — Vimeo (thumbnails
+are hash-based, not derivable from the ID), professional hosting, cloud
+storage, direct files — shows a plain background unless you pass `poster`
+explicitly.
 
 ## TypeScript
 
@@ -126,13 +131,15 @@ inspect them locally.
 | `url` | `string` | — | required |
 | `controls` | `boolean` | `true` | renders the built-in Shadow-DOM control bar |
 | `light` | `boolean` | `false` | thumbnail-first mode — defers engine mounting until clicked |
-| `poster` | `string` | — | custom poster image URL; falls back to a provider default (YouTube, Dailymotion) if omitted |
+| `poster` | `string` | — | custom poster image URL; falls back to a provider default (YouTube) if omitted |
 | `autoplay` / `muted` / `loop` | `boolean` | `false` | |
 | `playbackRates` | `number[]` | `[0.5, 1, 1.5, 2]` | shown in the control bar's rate selector |
 | `volume` | `number` (0–1) | — | overrides `volumeKey`-based persistence |
 | `volumeKey` | `string` | — | persists volume in `localStorage` under this key |
 | `theme` | `{ primaryColor?, accentColor?, fontFamily? }` | — | written as CSS custom properties |
 | `shield` | `boolean` | `true` | interaction shield over controllable iframe sources (YouTube, Vimeo) |
+| `loadingSpinner` | `boolean` | `true` | shows a spinner overlay while the engine mounts and during any `buffering` event |
+| `seo` | `{ name, description?, thumbnailUrl?, uploadDate?, durationSeconds? }` | — | opt-in `VideoObject` JSON-LD, see [Video SEO](#video-seo) |
 | `onEvent` | `(event) => void` | — | fires for every unified event type |
 
 Returns `{ play, pause, seekTo, setVolume, setPlaybackRate, on, off, destroy, ready }`.
@@ -142,6 +149,43 @@ Returns `{ play, pause, seekTo, setVolume, setPlaybackRate, on, off, destroy, re
 Pure function: URL in, `{ provider, type, src?, embedUrl?, id?, stability }`
 out (or `null`). Exported alongside `createPlayer` if you just want the URL
 resolution logic without mounting a player.
+
+## Video SEO
+
+`createPlayer` mounts entirely with client-side JavaScript, which means a
+crawler (or any tool) that fetches the page's raw HTML without executing
+scripts sees nothing but an empty container — no thumbnail, no link, no
+structured data. This library can only close that gap where there's an
+actual server-render step to put real content into, which is why the two
+tools below apply differently depending on which API you use:
+
+| | Vanilla `createPlayer` | React / Vue `<Player>` |
+|---|---|---|
+| Poster + link fallback | Not possible — `createPlayer` only runs after a script executes, so there's no HTML for a non-JS crawler to see in the first place. Put a real `<a href="{url}"><img src="{poster}"></a>` inside your own mount element's initial markup instead; `createPlayer` safely clears and replaces it on mount. | Automatic, no config. The SSR render emits a real poster `<img>` wrapped in an `<a href={url}>` as part of the component's own output — visible to every crawler, JS or not — and it's replaced once the real player mounts client-side. |
+| `VideoObject` JSON-LD | Opt-in via the `seo` option. Injected into `<head>` client-side, so **only crawlers that execute JavaScript see it** (Google documents support for this; most others — Bing, social link-preview bots — do not run scripts at all). | Opt-in via the `seo` prop, rendered server-side as part of the component's own JSON-LD `<script>` tag — every crawler sees it, JS or not. Prefer this over the vanilla path when you have the choice. |
+
+```jsx
+<Player
+  url={url}
+  seo={{
+    name: 'My video title',       // required — nothing is emitted without it
+    description: '...',            // falls back to `name`
+    uploadDate: '2026-01-15',      // ISO 8601 — required for Google's rich-result eligibility
+    durationSeconds: 93,           // converted to ISO 8601 duration (PT1M33S) automatically
+  }}
+/>
+```
+
+None of this data is fetched automatically — resolvers never call a
+provider API for title/description/duration (see the honest constraints
+below on why), so `name`/`description`/`uploadDate`/`durationSeconds` are
+only ever what you pass in. Without `seo`, `thumbnailUrl` still falls back
+to the resolved provider poster where one exists.
+
+Video sitemaps and `og:video`/`twitter:player` meta tags are page-`<head>`/
+site-level concerns and out of scope here — they belong in your framework's
+own metadata APIs (e.g. Next.js `generateMetadata`), not injected by a
+component mounted into a `<div>`.
 
 ## Honest constraints (read this before shipping "brand-free" as marketing copy)
 
@@ -155,6 +199,12 @@ resolution logic without mounting a player.
   protocol adapter exists (currently YouTube and Vimeo).
 - **Dropbox** resolver is a simple, documented URL rewrite and can break if
   the provider changes its URL scheme.
+- **Dailymotion is not supported.** Its current embed endpoint
+  (`geo.dailymotion.com`) exposes no postMessage control API, so there is no
+  documented way to drive play/pause/seek from the outside — only its own
+  built-in controls would be available, same as any bare unrecognized
+  iframe. `dailymotion.com` / `dai.ly` URLs resolve to `null` rather than a
+  half-working embed.
 
 ## Development
 

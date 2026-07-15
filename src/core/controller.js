@@ -11,10 +11,11 @@ import { createIframeEngine } from './engines/iframe.js';
 import { createShield } from './ui/shield.js';
 import { createControls } from './ui/controls.js';
 import { createCenterPlayButton } from './ui/center-play.js';
+import { createSpinner } from './ui/spinner.js';
 import { createLightPoster } from './lazy.js';
 import { applyTheme } from './ui/theme.js';
 import { resolveViaIframely } from './iframely-fallback.js';
-import { fetchDailymotionHlsUrl } from './dailymotion-metadata.js';
+import { buildVideoObjectJsonLd, stringifyForScriptTag } from './seo.js';
 
 const EVENT_TYPES = [
   'ready',
@@ -64,12 +65,34 @@ export function createPlayer(target, options) {
   // (unresolved URLs already skip light mode, unaffected by this change).
   let resolved = resolveSource(options.url);
 
+  // Opt-in VideoObject JSON-LD (core/seo.js). Injected into <head> here at
+  // creation time — this only reaches crawlers that execute JavaScript
+  // (Google documents support for JS-injected structured data; most other
+  // crawlers and social-link-preview scrapers don't run scripts at all, so
+  // they never see this). The React/Vue adapters render the equivalent
+  // JSON-LD directly in their SSR output instead, which every crawler sees
+  // regardless of whether it executes JS — prefer those where available.
+  let seoScript = null;
+  if (options.seo) {
+    const jsonLd = buildVideoObjectJsonLd(resolved, options.url, options.seo);
+    if (jsonLd) {
+      seoScript = document.createElement('script');
+      seoScript.type = 'application/ld+json';
+      seoScript.setAttribute('data-uep-seo', '');
+      seoScript.textContent = stringifyForScriptTag(jsonLd);
+      document.head.appendChild(seoScript);
+    } else {
+      console.warn('[uep] `seo` option requires at least a `name` — skipped');
+    }
+  }
+
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
   let engine = null;
   let shield = null;
   let controls = null;
   let centerPlayButton = null;
+  let spinner = options.loadingSpinner !== false ? createSpinner(container, emitter) : null;
   let lightPoster = null;
   let destroyed = false;
   let lastVolume = clamp(options.volume ?? 1, 0, 1);
@@ -85,6 +108,7 @@ export function createPlayer(target, options) {
   });
 
   async function mountEngine() {
+    spinner?.show();
     try {
       if (!resolved && options.iframelyKey) {
         resolved = await resolveViaIframely(options.url, options.iframelyKey);
@@ -98,19 +122,6 @@ export function createPlayer(target, options) {
           provider: 'unknown',
         });
         return;
-      }
-
-      if (resolved.provider === 'dailymotion' && resolved.type === 'iframe') {
-        const hlsUrl = await fetchDailymotionHlsUrl(resolved.id);
-        if (hlsUrl) {
-          resolved = {
-            provider: 'dailymotion',
-            type: 'hls',
-            src: hlsUrl,
-            id: resolved.id,
-            stability: 'stable',
-          };
-        }
       }
 
       if (resolved.type === 'native') {
@@ -337,15 +348,19 @@ export function createPlayer(target, options) {
       controls?.destroy();
       shield?.destroy();
       centerPlayButton?.destroy();
+      spinner?.destroy();
       lightPoster?.destroy();
       engine?.destroy();
+      seoScript?.remove();
       emitter.removeAllListeners();
       // Null refs so nothing holds GC-preventing references.
       controls = null;
       shield = null;
       centerPlayButton = null;
+      spinner = null;
       engine = null;
       lightPoster = null;
+      seoScript = null;
     },
 
     ready,

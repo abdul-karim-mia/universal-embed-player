@@ -6,20 +6,62 @@
 // `light` (boolean) toggles this mode on/off; `poster` (string) is an
 // independent option for the image itself. If `poster` is omitted, we fall
 // back to a provider default where one exists as a predictable, deterministic
-// URL (YouTube, Dailymotion) — most professional-hosting/cloud-storage
-// providers have no public thumbnail endpoint at all and just show a plain
-// background rather than a guessed URL.
+// URL (YouTube) — most professional-hosting/cloud-storage providers have no
+// public thumbnail endpoint at all and just show a plain background rather
+// than a guessed URL.
+const DEFAULT_TARGET_WIDTH = 640;
+const MIN_TARGET_WIDTH = 160;
+const MAX_TARGET_WIDTH = 1920;
+
+// Reads the player's actual rendered size (not a guess/default) so the
+// thumbnail requested is the closest match to what will really be
+// displayed — smaller containers stop paying for 1280px images they'll
+// just downscale, larger ones stop showing a blurry 480px image stretched
+// to fill the frame. Multiplied by devicePixelRatio so retina/high-DPI
+// screens still get a crisp image at their effective pixel size.
+function getTargetWidth(container) {
+  if (typeof window === 'undefined') return DEFAULT_TARGET_WIDTH;
+  const cssWidth = container.getBoundingClientRect().width || container.offsetWidth || DEFAULT_TARGET_WIDTH;
+  const dpr = window.devicePixelRatio || 1;
+  return Math.round(Math.min(MAX_TARGET_WIDTH, Math.max(MIN_TARGET_WIDTH, cssWidth * dpr)));
+}
+
+// YouTube's fixed thumbnail filenames, ascending by width — verified,
+// documented naming convention (i.ytimg.com/vi/<id>/<name>.jpg). `mqdefault`
+// and `hqdefault` are auto-generated for every video, no exceptions. Above
+// that, `sddefault`/`maxresdefault` only exist for videos whose *source*
+// was uploaded at that resolution or higher — for a video that doesn't
+// qualify, YouTube does NOT 404, it silently serves a small grey
+// placeholder at the requested URL, so there is no reliable way to detect
+// the miss client-side (an `onerror` handler never fires). This is a known,
+// documented quirk of YouTube's thumbnail CDN, not a guess — accepted here
+// the same way Vimeo/Wistia oEmbed 404s are accepted below: best-effort,
+// not solvable without a server-side check.
+const YOUTUBE_THUMB_SIZES = [
+  { name: 'mqdefault', width: 320 },
+  { name: 'hqdefault', width: 480 },
+  { name: 'sddefault', width: 640 },
+  { name: 'maxresdefault', width: 1280 },
+];
+
+function youtubeThumbName(targetWidth) {
+  const fit = YOUTUBE_THUMB_SIZES.find((size) => targetWidth <= size.width);
+  return (fit ?? YOUTUBE_THUMB_SIZES[YOUTUBE_THUMB_SIZES.length - 1]).name;
+}
+
 const PROVIDER_POSTERS = {
-  youtube: (id) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
-  dailymotion: (id) => `https://www.dailymotion.com/thumbnail/video/${id}`,
-  fastpix: (id) => `https://images.fastpix.com/${id}/thumbnail.jpg?time=1`,
-  jwplayer: (id) => `https://cdn.jwplayer.com/v2/media/${id}/poster.jpg?width=720`,
-  kaltura: (id, resolved) => {
+  youtube: (id, resolved, targetWidth) => `https://i.ytimg.com/vi/${id}/${youtubeThumbName(targetWidth)}.jpg`,
+  // FastPix images API: `width` is a documented resize param, default
+  // fit_mode ('preserve') keeps aspect ratio when only width is given
+  // (docs.fastpix.io/docs/extract-thumbnails-and-images-from-video).
+  fastpix: (id, resolved, targetWidth) => `https://images.fastpix.com/${id}/thumbnail.jpg?time=1&width=${targetWidth}`,
+  jwplayer: (id, resolved, targetWidth) => `https://cdn.jwplayer.com/v2/media/${id}/poster.jpg?width=${targetWidth}`,
+  kaltura: (id, resolved, targetWidth) => {
     const url = resolved?.embedUrl;
     if (!url) return null;
     const segments = url.split('/').filter(Boolean);
     const partnerId = segments[segments.indexOf('partner_id') + 1];
-    return `https://cdnsecakmi.kaltura.com/p/${partnerId}/thumbnail/entry_id/${id}/width/640`;
+    return `https://cdnsecakmi.kaltura.com/p/${partnerId}/thumbnail/entry_id/${id}/width/${targetWidth}`;
   },
   direct: (id, resolved) => {
     if (resolved?.src?.includes('/cc0-videos/flower.mp4')) {
@@ -66,21 +108,25 @@ async function oEmbedThumbnail(endpoint) {
   return data.thumbnail_url ?? null;
 }
 
+// `maxwidth` is a standard oEmbed request param (oembed.com spec), not a
+// per-provider guess — both Vimeo's and Wistia's oEmbed endpoints honor it.
 const ASYNC_PROVIDER_POSTERS = {
-  vimeo: (id) =>
-    oEmbedThumbnail(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(`https://vimeo.com/${id}`)}`),
-  wistia: (id) =>
+  vimeo: (id, targetWidth) =>
     oEmbedThumbnail(
-      `https://fast.wistia.com/oembed.json?url=${encodeURIComponent(`https://fast.wistia.com/embed/iframe/${id}`)}`,
+      `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(`https://vimeo.com/${id}`)}&maxwidth=${targetWidth}`,
+    ),
+  wistia: (id, targetWidth) =>
+    oEmbedThumbnail(
+      `https://fast.wistia.com/oembed.json?url=${encodeURIComponent(`https://fast.wistia.com/embed/iframe/${id}`)}&maxwidth=${targetWidth}`,
     ),
 };
 
-export function posterUrlFor(resolved) {
-  return PROVIDER_POSTERS[resolved.provider]?.(resolved.id, resolved) ?? null;
+export function posterUrlFor(resolved, targetWidth = DEFAULT_TARGET_WIDTH) {
+  return PROVIDER_POSTERS[resolved.provider]?.(resolved.id, resolved, targetWidth) ?? null;
 }
 
-export function asyncPosterUrlFor(resolved) {
-  return ASYNC_PROVIDER_POSTERS[resolved.provider]?.(resolved.id) ?? null;
+export function asyncPosterUrlFor(resolved, targetWidth = DEFAULT_TARGET_WIDTH) {
+  return ASYNC_PROVIDER_POSTERS[resolved.provider]?.(resolved.id, targetWidth) ?? null;
 }
 
 // Singleton stylesheet injected into <head> once so all poster instances share
@@ -168,7 +214,8 @@ export function createLightPoster(container, resolved, options, onActivate) {
   poster.setAttribute('data-uep-poster', '');
 
   let destroyed = false;
-  const image = options.poster ?? posterUrlFor(resolved);
+  const targetWidth = getTargetWidth(container);
+  const image = options.poster ?? posterUrlFor(resolved, targetWidth);
 
   // Glow logic:
   //   glowingPlaceholder: true  → always show glow (even with a poster image)
@@ -222,7 +269,7 @@ export function createLightPoster(container, resolved, options, onActivate) {
   }
 
   if (!image && resolved?.id && ASYNC_PROVIDER_POSTERS[resolved.provider]) {
-    ASYNC_PROVIDER_POSTERS[resolved.provider](resolved.id)
+    ASYNC_PROVIDER_POSTERS[resolved.provider](resolved.id, targetWidth)
       .then((url) => {
         // Guard against the poster having already been clicked away (or the
         // player destroyed) before the oEmbed round trip resolved.

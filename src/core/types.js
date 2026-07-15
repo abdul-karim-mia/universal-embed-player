@@ -35,6 +35,15 @@
  */
 
 /**
+ * @typedef {Object} SeoMetadata
+ * @property {string} name - video title; required, nothing is emitted without it
+ * @property {string} [description] - falls back to `name` if omitted
+ * @property {string} [thumbnailUrl] - falls back to the resolved provider poster if omitted
+ * @property {string} [uploadDate] - ISO 8601 date/datetime, e.g. '2026-01-15'
+ * @property {number} [durationSeconds] - converted to ISO 8601 duration (e.g. 93 -> 'PT1M33S')
+ */
+
+/**
  * @typedef {Object} PlayerOptions
  * @property {string} url
  * @property {boolean} [controls]
@@ -48,9 +57,11 @@
  * @property {string} [volumeKey]
  * @property {'cover' | 'contain' | 'fill'} [videoSize] - video display sizing style. 'cover' (fill/cover), 'contain' (fit/contain, default), or 'fill' (stretch).
  * @property {boolean} [centerPlayButton] - display a custom play/pause button in the center of the player, default false.
+ * @property {boolean} [loadingSpinner] - show a loading/buffering spinner overlay while the engine mounts and during any 'buffering' event, default true.
  * @property {PlayerTheme} [theme]
  * @property {boolean} [shield]
  * @property {string} [iframelyKey] - opt-in last-resort fallback (core/iframely-fallback.js): only tried when every built-in resolver returns null. Must be Iframely's client-safe hashed key (iframely.com/docs/allow-origins), never a raw private API key — this package never bundles Iframely credentials of its own (rules.md §7.3).
+ * @property {SeoMetadata} [seo] - opt-in VideoObject JSON-LD. In vanilla `createPlayer`, this only benefits crawlers that execute JavaScript (documented Googlebot behavior; most others don't) since the script tag is injected client-side — the React/Vue adapters render the same JSON-LD server-side instead, which works for every crawler.
  * @property {(event: UnifiedPlayerEvent) => void} [onEvent]
  */
 

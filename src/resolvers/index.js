@@ -1,6 +1,5 @@
 import { resolve as youtube } from './youtube.js';
 import { resolve as vimeo } from './vimeo.js';
-import { resolve as dailymotion } from './dailymotion.js';
 import { resolve as wistia } from './wistia.js';
 import { resolve as cloudflareStream } from './cloudflare-stream.js';
 import { resolve as fastpix } from './fastpix.js';
@@ -14,7 +13,6 @@ import { resolve as direct } from './direct.js';
 export const RESOLVERS = [
   youtube,
   vimeo,
-  dailymotion,
   wistia,
   cloudflareStream,
   fastpix,
