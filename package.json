@@ -20,15 +20,29 @@
     "./vue": {
       "types": "./types/vue/index.d.ts",
       "default": "./src/vue/index.js"
+    },
+    "./svelte": {
+      "types": "./src/svelte/index.d.ts",
+      "default": "./src/svelte/index.js"
+    },
+    "./webcomponent": {
+      "types": "./types/webcomponent/index.d.ts",
+      "default": "./src/webcomponent/index.js"
+    },
+    "./webcomponent/element": {
+      "types": "./types/webcomponent/element.d.ts",
+      "default": "./src/webcomponent/element.js"
     }
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "src/webcomponent/index.js"
+  ],
   "files": [
     "src",
     "types"
   ],
   "scripts": {
-    "test": "node --test tests/all.test.js",
+    "test": "node --test tests/all.test.js tests/webcomponent.test.js tests/svelte.test.js",
     "build:types": "tsc -p tsconfig.json",
     "prepublishOnly": "npm run build:types"
   },
@@ -37,6 +51,7 @@
     "dashjs": ">=4.7.0",
     "hls.js": "^1.6.16",
     "react": ">=18.0.0",
+    "svelte": ">=5.0.0",
     "vue": ">=3.0.0"
   },
   "peerDependenciesMeta": {
@@ -47,6 +62,9 @@
       "optional": true
     },
     "react": {
+      "optional": true
+    },
+    "svelte": {
       "optional": true
     },
     "vue": {
@@ -81,6 +99,7 @@
     "dashjs": "^4.7.4",
     "hls.js": "^1.6.16",
     "react": "^19.2.7",
+    "svelte": "^5.56.5",
     "typescript": "7.0.2",
     "vue": "^3.5.39"
   }
