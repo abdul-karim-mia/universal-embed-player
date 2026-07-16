@@ -1,6 +1,6 @@
-// Shared HTMLMediaElement wiring used by native.js, hls.js, and dash.js —
-// every engine that ultimately drives a real <video> element binds through
-// here so the unified event mapping (plan.md §5) is defined exactly once.
+
+
+
 const VOLUME_STORAGE_PREFIX = 'uep:volume:';
 
 export function applyMediaOptions(video, options) {
@@ -74,8 +74,8 @@ export function createMediaControls(video, emitter, provider) {
       const p = video.play();
       if (p instanceof Promise) {
         p.catch((err) => {
-          // Autoplay policy rejection (NotAllowedError) is the most common case.
-          // Emit as a structured error so callers can react (e.g. show a play button).
+          
+          
           emitter?.emit('error', {
             code: 'PLAY_REJECTED',
             message: err?.message ?? 'play() was rejected',

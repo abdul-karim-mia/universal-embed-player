@@ -1,7 +1,7 @@
-// Central controller: resolves the URL, decides which engine mounts, and
-// composes the shield/controls/theme layers around it. This is the only
-// module allowed to create/mount/destroy DOM nodes for the player surface
-// (rules.md §3) — engines only provide the raw media surface.
+
+
+
+
 import { resolveSource } from '../resolvers/index.js';
 import { UnifiedEventEmitter } from './events.js';
 import { createNativeEngine } from './engines/native.js';
@@ -36,7 +36,7 @@ const EVENT_TYPES = [
  */
 export function createPlayer(target, options) {
   if (typeof window === 'undefined') {
-    // SSR guard (plan.md §9): no-op until a real client mount call happens.
+    
     return createNoopPlayer();
   }
 
@@ -56,22 +56,22 @@ export function createPlayer(target, options) {
     for (const type of EVENT_TYPES) emitter.on(type, options.onEvent);
   }
 
-  // `resolved` stays a `let`: the synchronous built-in resolvers set it
-  // immediately (unchanged from before), but mountEngine() below may still
-  // fill it in asynchronously via the opt-in Iframely last resort. Reading
-  // `resolved` before mountEngine() runs (e.g. `wantsLightMode` just below)
-  // only ever sees the synchronous result — light mode + Iframely fallback
-  // together isn't supported, matching the existing light-mode contract
-  // (unresolved URLs already skip light mode, unaffected by this change).
+  
+  
+  
+  
+  
+  
+  
   let resolved = resolveSource(options.url);
 
-  // Opt-in VideoObject JSON-LD (core/seo.js). Injected into <head> here at
-  // creation time — this only reaches crawlers that execute JavaScript
-  // (Google documents support for JS-injected structured data; most other
-  // crawlers and social-link-preview scrapers don't run scripts at all, so
-  // they never see this). The React/Vue adapters render the equivalent
-  // JSON-LD directly in their SSR output instead, which every crawler sees
-  // regardless of whether it executes JS — prefer those where available.
+  
+  
+  
+  
+  
+  
+  
   let seoScript = null;
   if (options.seo) {
     const jsonLd = buildVideoObjectJsonLd(resolved, options.url, options.seo);
@@ -99,8 +99,8 @@ export function createPlayer(target, options) {
   let muteState = false;
   let currentVideoSize = options.videoSize || 'contain';
 
-  // Sync lastVolume with any volume changes (e.g. from the UI slider or API calls)
-  // so that unmute/toggle restores the correct pre-mute volume level.
+  
+  
   emitter.on('volumechange', ({ volume }) => {
     if (typeof volume === 'number' && Number.isFinite(volume) && volume > 0) {
       lastVolume = volume;
@@ -138,7 +138,7 @@ export function createPlayer(target, options) {
         engine.mediaElement.style.objectFit = currentVideoSize;
       }
 
-      // The async hls/dash import may resolve after destroy() was already called.
+      
       if (destroyed) {
         engine?.destroy();
         engine = null;
@@ -170,13 +170,13 @@ export function createPlayer(target, options) {
   const wantsLightMode = Boolean(options.light) && resolved;
   const ready = wantsLightMode
     ? new Promise((resolve) => {
-        // The poster click *is* the play action — mount the engine and
-        // start playback immediately so the user doesn't have to click a
-        // second time on the shield/controls. This is also why we always
-        // load the real YouTube IFrame API (see iframe-protocols/youtube.js)
-        // rather than a bare autoplay=1 iframe: Safari/mobile don't reliably
-        // carry the user-gesture association through to a freshly recreated
-        // iframe, but a JS play() call issued right after mount does.
+        
+        
+        
+        
+        
+        
+        
         lightPoster = createLightPoster(container, resolved, options, () => {
           lightPoster = null;
           mountEngine().then(() => {
@@ -189,23 +189,23 @@ export function createPlayer(target, options) {
 
 
 
-  // applyMute is race-safe: if engine is not yet mounted, muteState and the
-  // controls icon are still updated correctly; the actual setVolume(0/restore)
-  // fires when engine is available (engine?.setVolume uses optional-chaining).
-  // Always reads the REAL current state from controls (which owns the UI) when
-  // controls is mounted, falling back to muteState before that.
+  
+  
+  
+  
+  
   const getCurrentMuteState = () => (controls ? controls.getMuteState() : muteState);
 
   const applyMute = (mute) => {
-    if (mute === getCurrentMuteState()) return; // idempotent — already in right state
+    if (mute === getCurrentMuteState()) return; 
     muteState = mute;
-    // Sync icon BEFORE setVolume so controls see correct state when the
-    // resulting volumechange event fires.
+    
+    
     controls?.setMuted(mute);
     try {
       engine?.setVolume(mute ? 0 : lastVolume);
     } catch (err) {
-      // Roll back state if the engine call fails.
+      
       const prev = !mute;
       muteState = prev;
       controls?.setMuted(prev);
@@ -270,7 +270,7 @@ export function createPlayer(target, options) {
         return;
       }
       const v = clamp(volume, 0, 1);
-      if (v > 0) lastVolume = v; // keep lastVolume up to date for unmute
+      if (v > 0) lastVolume = v; 
       if (v > 0 && muteState) {
         muteState = false;
         controls?.setMuted(false);
@@ -343,7 +343,7 @@ export function createPlayer(target, options) {
      * Tear down the player. Idempotent — safe to call multiple times.
      */
     destroy: () => {
-      if (destroyed) return; // guard double-destroy
+      if (destroyed) return; 
       destroyed = true;
       controls?.destroy();
       shield?.destroy();
@@ -353,7 +353,7 @@ export function createPlayer(target, options) {
       engine?.destroy();
       seoScript?.remove();
       emitter.removeAllListeners();
-      // Null refs so nothing holds GC-preventing references.
+      
       controls = null;
       shield = null;
       centerPlayButton = null;

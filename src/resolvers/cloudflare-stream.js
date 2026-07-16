@@ -12,11 +12,11 @@ export function resolve(url) {
 
   const host = parsed.hostname;
 
-  // Don't claim direct manifest URLs (ends with .m3u8 or .mpd) —
-  // let the generic HLS/DASH resolvers handle those.
+  
+  
   if (/\.(m3u8|mpd)$/i.test(parsed.pathname)) return null;
 
-  // customer-{CODE}.cloudflarestream.com/{UID}/iframe → HLS manifest
+  
   const customerMatch = host.match(CF_CUSTOMER_HOST_RE);
   if (customerMatch) {
     const code = customerMatch[1];
@@ -32,7 +32,7 @@ export function resolve(url) {
     }
   }
 
-  // iframe.cloudflarestream.com/{UID} or watch.cloudflarestream.com/{UID}
+  
   if (!CF_SHORT_HOST_RE.test(host)) return null;
 
   const id = parsed.pathname.split('/').filter(Boolean)[0];

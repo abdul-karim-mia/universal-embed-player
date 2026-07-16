@@ -5,6 +5,8 @@ import { resolve as cloudflareStream } from './cloudflare-stream.js';
 import { resolve as fastpix } from './fastpix.js';
 import { resolve as jwplayer } from './jwplayer.js';
 import { resolve as kaltura } from './kaltura.js';
+import { resolve as gumlet } from './gumlet.js';
+import { resolve as jetpackVideopress } from './jetpack-videopress.js';
 import { resolve as dropbox } from './dropbox.js';
 import { resolve as direct } from './direct.js';
 
@@ -18,14 +20,12 @@ export const RESOLVERS = [
   fastpix,
   jwplayer,
   kaltura,
+  gumlet,
+  jetpackVideopress,
   dropbox,
   direct,
 ];
 
-/**
- * @param {string} url
- * @returns {import('../core/types.js').ResolvedSource | null}
- */
 export function resolveSource(url) {
   if (typeof url !== 'string' || url.length === 0) return null;
 

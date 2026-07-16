@@ -1,9 +1,9 @@
-// Embed parameter reference: https://knowledge.kaltura.com (extwidget/preview
-// iframe pattern, confirmed against Kaltura's own published example URL:
-// kaltura.com/index.php/extwidget/preview/partner_id/<pid>/uiconf_id/<uid>/entry_id/<eid>/embed/iframe).
-// Path segments are key/value pairs rather than a single fixed regex, so this
-// resolver walks the path looking for the three required keys instead of
-// hardcoding their order.
+
+
+
+
+
+
 const KALTURA_HOST_RE = /(^|\.)kaltura\.com$/;
 const PARTNER_ID_RE = /^\d+$/;
 const UICONF_ID_RE = /^\d+$/;

@@ -1,9 +1,9 @@
-// Loading/buffering spinner overlay. Mounted for every engine (unlike
-// shield/controls/center-play, it is not gated on `engine.controllable` —
-// 'ready' and 'buffering' fire regardless of whether we have a command
-// bridge into the underlying player) so even brand-locked iframe embeds
-// (Vimeo's 'bufferstart', YouTube's state 3) get a consistent loading
-// indicator instead of a blank/frozen frame.
+
+
+
+
+
+
 let _spinnerStyleInjected = false;
 function ensureSpinnerStyles() {
   if (_spinnerStyleInjected || typeof document === 'undefined') return;
@@ -56,12 +56,12 @@ export function createSpinner(container, emitter) {
     el.removeAttribute('data-visible');
   };
 
-  // 'buffering' only fires on the *start* of a stall (rules.md / plan.md §5 —
-  // no distinct provider-agnostic "resumed" counterpart exists), so hiding
-  // relies on whichever unified event fires next once playback is actually
-  // moving again: 'timeupdate' (native progress) or 'play' (resumed after a
-  // stall-while-playing). 'pause'/'ended'/'error' also clear it so a stall
-  // that ends in one of those states doesn't leave the spinner stuck.
+  
+  
+  
+  
+  
+  
   const unsubscribers = [
     emitter.on('buffering', show),
     emitter.on('ready', hide),

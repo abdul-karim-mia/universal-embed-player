@@ -1,7 +1,7 @@
-// Pure, DOM-free attribute-parsing helpers for the <uep-player> custom
-// element — kept separate from element.js so they're unit-testable the same
-// way resolvers are (tests/webcomponent.test.js), no DOM/customElements
-// needed to exercise them.
+
+
+
+
 
 /**
  * Boolean attributes on <uep-player> use an opt-out convention — "true

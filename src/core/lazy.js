@@ -1,24 +1,24 @@
-// Thumbnail-first ("light") mode: renders a poster image + play button and
-// defers all engine mounting (and therefore any third-party script loading)
-// until the user actually interacts — the same pattern `lite-youtube-embed`
-// uses, adopted directly after reading its source (plan.md §0.1 / §9).
-//
-// `light` (boolean) toggles this mode on/off; `poster` (string) is an
-// independent option for the image itself. If `poster` is omitted, we fall
-// back to a provider default where one exists as a predictable, deterministic
-// URL (YouTube) — most professional-hosting/cloud-storage providers have no
-// public thumbnail endpoint at all and just show a plain background rather
-// than a guessed URL.
+
+
+
+
+
+
+
+
+
+
+
 const DEFAULT_TARGET_WIDTH = 640;
 const MIN_TARGET_WIDTH = 160;
 const MAX_TARGET_WIDTH = 1920;
 
-// Reads the player's actual rendered size (not a guess/default) so the
-// thumbnail requested is the closest match to what will really be
-// displayed — smaller containers stop paying for 1280px images they'll
-// just downscale, larger ones stop showing a blurry 480px image stretched
-// to fill the frame. Multiplied by devicePixelRatio so retina/high-DPI
-// screens still get a crisp image at their effective pixel size.
+
+
+
+
+
+
 function getTargetWidth(container) {
   if (typeof window === 'undefined') return DEFAULT_TARGET_WIDTH;
   const cssWidth = container.getBoundingClientRect().width || container.offsetWidth || DEFAULT_TARGET_WIDTH;
@@ -26,17 +26,17 @@ function getTargetWidth(container) {
   return Math.round(Math.min(MAX_TARGET_WIDTH, Math.max(MIN_TARGET_WIDTH, cssWidth * dpr)));
 }
 
-// YouTube's fixed thumbnail filenames, ascending by width — verified,
-// documented naming convention (i.ytimg.com/vi/<id>/<name>.jpg). `mqdefault`
-// and `hqdefault` are auto-generated for every video, no exceptions. Above
-// that, `sddefault`/`maxresdefault` only exist for videos whose *source*
-// was uploaded at that resolution or higher — for a video that doesn't
-// qualify, YouTube does NOT 404, it silently serves a small grey
-// placeholder at the requested URL, so there is no reliable way to detect
-// the miss client-side (an `onerror` handler never fires). This is a known,
-// documented quirk of YouTube's thumbnail CDN, not a guess — accepted here
-// the same way Vimeo/Wistia oEmbed 404s are accepted below: best-effort,
-// not solvable without a server-side check.
+
+
+
+
+
+
+
+
+
+
+
 const YOUTUBE_THUMB_SIZES = [
   { name: 'mqdefault', width: 320 },
   { name: 'hqdefault', width: 480 },
@@ -51,9 +51,9 @@ function youtubeThumbName(targetWidth) {
 
 const PROVIDER_POSTERS = {
   youtube: (id, resolved, targetWidth) => `https://i.ytimg.com/vi/${id}/${youtubeThumbName(targetWidth)}.jpg`,
-  // FastPix images API: `width` is a documented resize param, default
-  // fit_mode ('preserve') keeps aspect ratio when only width is given
-  // (docs.fastpix.io/docs/extract-thumbnails-and-images-from-video).
+  
+  
+  
   fastpix: (id, resolved, targetWidth) => `https://images.fastpix.com/${id}/thumbnail.jpg?time=1&width=${targetWidth}`,
   jwplayer: (id, resolved, targetWidth) => `https://cdn.jwplayer.com/v2/media/${id}/poster.jpg?width=${targetWidth}`,
   kaltura: (id, resolved, targetWidth) => {
@@ -77,30 +77,30 @@ const PROVIDER_POSTERS = {
   },
 };
 
-// Vimeo thumbnails are hash-named CDN URLs, not derivable from the video ID
-// alone — the one round trip to Vimeo's public oEmbed endpoint is the only
-// CORS-accessible way to discover one (cross-checked against Plyr's vimeo
-// plugin, which fetches the same endpoint for its default poster; the
-// internal /config endpoint the player itself uses has the same data but
-// sends no Access-Control-Allow-Origin header, so a cross-origin fetch to it
-// from a consuming page is silently blocked by the browser). `fetch` is a
-// native browser API (plan.md §0.2), so this stays dependency-free, but it
-// does add a real network call and a `connect-src https://vimeo.com` CSP
-// requirement — scoped to only fire when light mode is on and no explicit
-// `poster` option was given.
-//
-// Best-effort, plan.md §8-style fragility: some videos 404 on oEmbed even
-// though the iframe embed itself plays fine (an owner-controlled Vimeo
-// privacy setting, confirmed against a real video ID during development —
-// not a bug in this fetch). There's no CORS-safe fallback for those, so they
-// just keep the plain background rather than a broken image.
-// Wistia's oEmbed endpoint (linked from its own embed page's
-// <link rel=alternate type=application/json+oembed>) is the same
-// unauthenticated, CORS-enabled shape as Vimeo's — verified directly against
-// a real Wistia video. Wistia's Data API can also extract a thumbnail at an
-// arbitrary timestamp (docs.wistia.com), but that endpoint requires an
-// account API key, which rules.md §7.3 forbids requiring for any free-tier
-// resolver/default; oEmbed's single default thumbnail needs no key.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function oEmbedThumbnail(endpoint) {
   const response = await fetch(endpoint);
   if (!response.ok) return null;
@@ -108,8 +108,8 @@ async function oEmbedThumbnail(endpoint) {
   return data.thumbnail_url ?? null;
 }
 
-// `maxwidth` is a standard oEmbed request param (oembed.com spec), not a
-// per-provider guess — both Vimeo's and Wistia's oEmbed endpoints honor it.
+
+
 const ASYNC_PROVIDER_POSTERS = {
   vimeo: (id, targetWidth) =>
     oEmbedThumbnail(
@@ -129,8 +129,8 @@ export function asyncPosterUrlFor(resolved, targetWidth = DEFAULT_TARGET_WIDTH) 
   return ASYNC_PROVIDER_POSTERS[resolved.provider]?.(resolved.id, targetWidth) ?? null;
 }
 
-// Singleton stylesheet injected into <head> once so all poster instances share
-// the same keyframe/rule set without duplicating it per player.
+
+
 let _glowStyleInjected = false;
 function ensureGlowStyles() {
   if (_glowStyleInjected || typeof document === 'undefined') return;
@@ -217,13 +217,13 @@ export function createLightPoster(container, resolved, options, onActivate) {
   const targetWidth = getTargetWidth(container);
   const image = options.poster ?? posterUrlFor(resolved, targetWidth);
 
-  // Glow logic:
-  //   glowingPlaceholder: true  → always show glow (even with a poster image)
-  //   glowingPlaceholder: false → never show glow
-  //   glowingPlaceholder: unset → show glow only when there is no static image
-  //                               (acts as loading skeleton while async fetch
-  //                               is in flight for Vimeo/Wistia, or permanent
-  //                               fallback for providers with no poster at all)
+  
+  
+  
+  
+  
+  
+  
   const hasAsyncPoster = Boolean(resolved?.id && ASYNC_PROVIDER_POSTERS[resolved.provider]);
   const useGlow =
     options.glowingPlaceholder === true ||
@@ -232,8 +232,8 @@ export function createLightPoster(container, resolved, options, onActivate) {
   if (useGlow) {
     poster.setAttribute('data-uep-glow', '');
 
-    // Allow the user to customise glow colours/speed via the glowStyle option:
-    //   glowStyle: { color1: '#ff0', color2: '#f0f', speed: '6s', angle: '30deg' }
+    
+    
     const gs = options.glowStyle ?? {};
     if (gs.color1) poster.style.setProperty('--uep-glow-color-1', gs.color1);
     if (gs.color2) poster.style.setProperty('--uep-glow-color-2', gs.color2);
@@ -260,7 +260,7 @@ export function createLightPoster(container, resolved, options, onActivate) {
     cursor: 'pointer',
   });
 
-  // Mark image as loaded once the background is set, so the glow fades away
+  
   if (image) {
     const img = new Image();
     img.onload = () => { if (!destroyed) poster.setAttribute('data-uep-image-loaded', ''); };
@@ -271,19 +271,19 @@ export function createLightPoster(container, resolved, options, onActivate) {
   if (!image && resolved?.id && ASYNC_PROVIDER_POSTERS[resolved.provider]) {
     ASYNC_PROVIDER_POSTERS[resolved.provider](resolved.id, targetWidth)
       .then((url) => {
-        // Guard against the poster having already been clicked away (or the
-        // player destroyed) before the oEmbed round trip resolved.
+        
+        
         if (destroyed || !url) return;
         poster.style.backgroundImage = `url("${url}")`;
-        // Preload the fetched image before marking as loaded so the glow
-        // transition doesn't fire on a broken/blank frame.
+        
+        
         const img = new Image();
         img.onload = () => { if (!destroyed) poster.setAttribute('data-uep-image-loaded', ''); };
         img.src = url;
       })
       .catch(() => {
-        // Best-effort only (plan.md §8-style fragility) — glow keeps running
-        // if the oEmbed fetch fails (offline, CORS, rate-limited, CSP).
+        
+        
       });
   }
 
@@ -307,8 +307,8 @@ export function createLightPoster(container, resolved, options, onActivate) {
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
   });
 
-  // Same play glyph as the control bar's play button (ui/controls.js), for
-  // a consistent look between the poster and the mounted player.
+  
+  
   playButton.innerHTML =
     '<svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" style="margin-left: 3px"><path d="M8 5v14l11-7z"/></svg>';
   poster.append(playButton);

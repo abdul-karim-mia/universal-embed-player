@@ -1,39 +1,39 @@
-// <uep-player> — native custom element wrapping createPlayer. Works in any
-// framework (Angular, Svelte, Solid, plain HTML) with zero adapter of its
-// own — this file plus index.js's registration IS the "adapter."
-//
-// No Shadow DOM on the host element itself (controls.js's own internal
-// shadow root, for the control bar, is unrelated and unaffected). The host
-// element's light-DOM content is unconditionally cleared and replaced on
-// mount, same contract as vanilla createPlayer's `container.innerHTML = ''`
-// — see README "Video SEO" for the documented recipe of writing real
-// fallback markup (a poster <a><img>) as light-DOM children in static HTML
-// for crawler visibility before upgrade, deliberately not auto-parsed here
-// (see plan notes: the `seo` property/attribute is the structured, documented
-// path for that data — inventing implicit markup-shape parsing would be new,
-// undocumented behavior).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { createPlayer } from '../core/controller.js';
 import { parseUepBoolean, parseUepJson, parseUepNumber, parsePlaybackRatesAttr } from './attr-utils.js';
 
-// SSR guard: importing this module in Node must not crash on `class X
-// extends HTMLElement` — HTMLElement doesn't exist there. Mirrors
-// controller.js's createNoopPlayer() SSR posture: the class is simply never
-// meaningfully instantiated server-side (index.js's registration is itself
-// guarded by `typeof customElements !== 'undefined'`).
+
+
+
+
+
 const BaseElement = typeof HTMLElement !== 'undefined' ? HTMLElement : class {};
 
-// attr: HTML attribute name (kebab-case) | prop: JS property name (camelCase)
-// kind: how to parse the attribute string | default: value when attribute is absent
-//
-// Drives #getProp()/#setProp()/#parseAttr()/attributeChangedCallback() below
-// — but each property still needs its own real `get`/`set` declaration in
-// the class body (not generated from this array at runtime) because tsc's
-// JSDoc-based declaration emit can't infer types from a dynamic
-// Object.defineProperty loop; a loop-generated accessor produces a silently
-// incomplete .d.ts (verified while building this file — @property tags on
-// the class docblock don't fix it either, TS doesn't support that for plain
-// ES class declarations). The actual get/set *behavior* stays de-duplicated
-// through #getProp()/#setProp() below; only the type-carrying syntax repeats.
+
+
+
+
+
+
+
+
+
+
+
+
 const ATTR_DEFS = [
   { attr: 'url', prop: 'url', kind: 'string' },
   { attr: 'controls', prop: 'controls', kind: 'bool', default: true },
@@ -57,10 +57,10 @@ const ATTR_DEF_BY_NAME = new Map(ATTR_DEFS.map((def) => [def.attr, def]));
 const ATTR_DEF_BY_PROP = new Map(ATTR_DEFS.map((def) => [def.prop, def]));
 const OBSERVED_ATTRS = ATTR_DEFS.map((def) => def.attr);
 
-// Options with an existing live-update path on the createPlayer return value
-// (core/controller.js) — changing these attribute/property re-applies via
-// that method instead of a full destroy+remount. Everything else remounts,
-// matching the React/Vue adapters' "only structural changes remount" model.
+
+
+
+
 function applyLive(player, prop, value) {
   if (prop === 'volume') player.setVolume(value ?? 1);
   else if (prop === 'videoSize') player.setVideoSize(value ?? 'contain');
@@ -69,10 +69,10 @@ const LIVE_PROPS = new Set(['volume', 'videoSize']);
 
 const EVENT_TYPES = ['ready', 'play', 'pause', 'buffering', 'timeupdate', 'volumechange', 'ratechange', 'ended', 'error'];
 
-// Singleton stylesheet, same pattern as lazy.js's ensureGlowStyles() and
-// spinner.js's ensureSpinnerStyles() — targets a self-applied data attribute
-// rather than the tag name, since UepPlayerElement can be registered under
-// any tag via customElements.define (not only 'uep-player').
+
+
+
+
 let _hostStyleInjected = false;
 function ensureHostStyles() {
   if (_hostStyleInjected || typeof document === 'undefined') return;
@@ -100,12 +100,12 @@ export class UepPlayerElement extends BaseElement {
     this.setAttribute('data-uep-player', '');
   }
 
-  // ── Property accessors ─────────────────────────────────────────────────
-  // Property value wins over the attribute when explicitly set; falls
-  // through to parsing the live attribute otherwise. Each pair is a thin,
-  // typed wrapper over #getProp()/#setProp() so the actual logic lives in
-  // exactly one place (see the ATTR_DEFS comment above for why these can't
-  // be generated in a loop and still produce correct types).
+  
+  
+  
+  
+  
+  
 
   /** @returns {string | undefined} */
   get url() {
@@ -306,12 +306,12 @@ export class UepPlayerElement extends BaseElement {
 
   connectedCallback() {
     this.#connected = true;
-    // connectedCallback can fire the instant the opening tag is inserted,
-    // before light-DOM children (e.g. a documented SEO fallback <a><img>
-    // written directly in the consumer's own HTML) have been parsed — a
-    // race React/Vue's effect/commit-tied mounting never has. A microtask
-    // is guaranteed to run after the parser finishes inserting this
-    // element's whole subtree, the standard mitigation.
+    
+    
+    
+    
+    
+    
     queueMicrotask(() => {
       if (!this.#connected || this.#mountDiv) return;
       this.#mount();
@@ -366,7 +366,7 @@ export class UepPlayerElement extends BaseElement {
     this.#player = createPlayer(this.#mountDiv, options);
   }
 
-  // ── Imperative API — 1:1 mirror of UepPlayer (core/types.js) ──────────
+  
   play() {
     this.#player?.play();
   }
@@ -419,6 +419,6 @@ export class UepPlayerElement extends BaseElement {
   }
 }
 
-// Exposed for tests/documentation — every unified event type is dispatched
-// as `uep-<type>` per the class's #mount() wiring above.
+
+
 export const WEBCOMPONENT_EVENT_TYPES = EVENT_TYPES;

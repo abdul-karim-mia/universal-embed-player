@@ -267,6 +267,170 @@ test('kaltura: rejects a URL missing a required param', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Loom — removed: no public control API found (no JS SDK, no postMessage
+// protocol), so it can never get our custom control bar/shield the way
+// rules.md §4.1 requires. See plan.md for the full writeup.
+// ---------------------------------------------------------------------------
+test('loom: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://www.loom.com/share/1eeb2b4b64ed4c60900ee45d16fa9914');
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
+// Vidyard — removed. The VidyardV4 player API genuinely works (play, pause,
+// seek, setVolume, timeupdate all confirmed live), but Vidyard has no
+// documented URL parameter or data attribute to hide its native control
+// bar — same-origin policy means no client-side code can hide it any other
+// way (rules.md §4.1). Confirmed visually: Vidyard's own share icon and
+// controls stayed visible underneath our control bar. See plan.md §0.6.
+// ---------------------------------------------------------------------------
+test('vidyard: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://share.vidyard.com/watch/9pdfZ4o1jmmnFN8t3D1suH');
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
+// Brightcove — removed: the only documented cross-origin postMessage
+// mechanism for a players.brightcove.net iframe is events-only/read-only
+// (no command channel in), so it can't get a real control bar. See plan.md.
+// ---------------------------------------------------------------------------
+test('brightcove: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://players.brightcove.net/1234567890/default_default/index.html?videoId=6111111111001');
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
+// Panopto — removed. A resolver and a protocol adapter were both built and
+// looked solid on paper (EmbedApi constructor/events confirmed via multiple
+// independent docs), but live-browser verification showed the script URL
+// (https://{serverName}/Panopto/Resources/embedapi.js) 404s — it does not
+// exist at that path on Panopto's own demo tenant. No correct URL could be
+// found after further probing, so window.EmbedApi never loads and the
+// adapter can never attach. See plan.md §0.6.
+// ---------------------------------------------------------------------------
+test('panopto: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource(
+    'https://acme.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=12345678-90ab-cdef-1234-567890abcdef',
+  );
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
+// Bunny.net Stream — removed. The Player.js command channel genuinely works
+// (fixed a real string-vs-object postMessage bug along the way, then
+// confirmed play/pause/seek/volume/timeupdate all live), but Bunny has no
+// documented URL parameter to hide its native control bar — that's a
+// per-library dashboard-only setting, not something an arbitrary embedding
+// developer controls. Confirmed visually: Bunny's own progress bar stayed
+// visible underneath our control bar when paused. See plan.md §0.6.
+// ---------------------------------------------------------------------------
+test('bunny stream: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://video.bunnycdn.com/play/12345/9f8e7d6c-1234-5678-9abc-def012345678');
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
+// Spotlightr — removed. spotlightr.js loaded successfully from the per-account
+// CDN script URL, but live-browser verification showed it never recognized
+// our plain iframe: window.playerSettingsById stayed empty and the
+// vooPlayerReady callback never fired. Spotlightr's own docs note the JS API
+// requires "advanced embed code" — a specific HTML snippet their dashboard
+// generates per video, not a plain iframe plus a separately-loaded script —
+// so this integration shape doesn't work. See plan.md §0.6.
+// ---------------------------------------------------------------------------
+test('spotlightr: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://watch.spotlightr.com/v/abc123');
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
+// Gumlet
+// ---------------------------------------------------------------------------
+test('gumlet: play.gumlet.io embed URL is passthrough-validated', () => {
+  const r = resolveSource('https://play.gumlet.io/embed/64d3f8e9a1b2c3d4e5f6a7b8');
+  assert.equal(r.provider, 'gumlet');
+  assert.equal(r.type, 'iframe');
+  assert.equal(r.id, '64d3f8e9a1b2c3d4e5f6a7b8');
+  assert.equal(r.embedUrl, 'https://play.gumlet.io/embed/64d3f8e9a1b2c3d4e5f6a7b8');
+});
+
+test('gumlet: rejects an unrelated host', () => {
+  const r = resolveSource('https://example.com/embed/abc123');
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
+// Publitio, Hippo Video, Sendspark, Muse.ai/Skiv, vzaar, ScreenPal, Bonjoro —
+// removed. Each was researched for a genuine control API (JS SDK or
+// documented postMessage protocol) and none clears the bar this project
+// requires before wrapping a provider in our own control bar/shield
+// (rules.md §4.1): Hippo Video, Sendspark, Muse.ai/Skiv, ScreenPal, and
+// Bonjoro have no public control API at all; Publitio's postMessage protocol
+// only covers play/pause (no seek, no volume, no timeupdate/ready — not
+// enough to drive a real control bar); vzaar's own API docs are gone
+// (help.vzaar.com now redirects to Dacast, which acquired vzaar in 2019) and
+// the only recoverable example was a legacy toggle-only playPause() call
+// with no confirmed seek/volume/event names. See plan.md for the full
+// per-provider writeup.
+// ---------------------------------------------------------------------------
+test('publitio: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://media.publit.io/file/abc123.html');
+  assert.equal(r, null);
+});
+
+test('hippo video: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://www.hippovideo.io/video/play/abc123');
+  assert.equal(r, null);
+});
+
+test('sendspark: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://sendspark.com/share/abc123');
+  assert.equal(r, null);
+});
+
+test('muse-ai: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://muse.ai/v/abc123');
+  assert.equal(r, null);
+});
+
+test('vzaar: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://view.vzaar.com/12345678/player');
+  assert.equal(r, null);
+});
+
+test('screenpal: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://go.screenpal.com/watch/cWZzZ9WGGD8');
+  assert.equal(r, null);
+});
+
+test('bonjoro: URLs are unresolved, not silently guessed', () => {
+  const r = resolveSource('https://bonjoro.com/g/abc123');
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
+// Jetpack VideoPress
+// ---------------------------------------------------------------------------
+test('jetpack videopress: videopress.com/v URL resolves to the embed URL', () => {
+  const r = resolveSource('https://videopress.com/v/PMfFvyZW');
+  assert.equal(r.provider, 'jetpack-videopress');
+  assert.equal(r.type, 'iframe');
+  assert.equal(r.id, 'PMfFvyZW');
+  assert.equal(r.embedUrl, 'https://videopress.com/embed/PMfFvyZW');
+});
+
+test('jetpack videopress: video.wordpress.com/embed URL', () => {
+  const r = resolveSource('https://video.wordpress.com/embed/PMfFvyZW');
+  assert.equal(r.provider, 'jetpack-videopress');
+  assert.equal(r.id, 'PMfFvyZW');
+});
+
+test('jetpack videopress: rejects an unrelated host', () => {
+  const r = resolveSource('https://example.com/v/PMfFvyZW');
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
 // Dropbox
 // ---------------------------------------------------------------------------
 test('dropbox: /s/ share link rewrites dl=0 to raw=1', () => {

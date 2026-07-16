@@ -1,42 +1,42 @@
-// Unified control bar rendered inside a Shadow DOM root so host-page CSS can
-// never leak in or out (rules.md §6). Customization points are the
-// documented ::part() names below, not the internal class names, which may
-// change between minor versions.
-//
-// Default accent is violet, not any provider's brand color (YouTube red,
-// Vimeo blue, Twitch purple) — deliberately its own identity rather than
-// reading as a reskin of whichever source happens to be playing. Icons are
-// inline SVG (crisp at any size, no font/glyph-rendering dependency). The
-// bar is a thin, floating rounded pill rather than a flush-to-edge gradient
-// strip. Below a width threshold the horizontal volume slider is replaced
-// by a volume button that opens a small vertical-slider popup, since a
-// full-width horizontal slider doesn't fit a narrow/thumbnail-sized player.
+
+
+
+
+
+
+
+
+
+
+
+
+
 const ICONS = {
-  // Material Design "play_arrow" — rounded triangle
+  
   play:
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
 
-  // Material Design "pause" — two solid bars
+  
   pause:
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
 
-  // Material Design "volume_up" — speaker body + small arc + large arc
+  
   volume:
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>',
 
-  // Speaker body + filled × mark — pure fill, no stroke
+  
   volumeMuted:
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M21 8.8l-.8-.8-3.2 3.2-3.2-3.2-.8.8 3.2 3.2-3.2 3.2.8.8 3.2-3.2 3.2 3.2.8-.8-3.2-3.2z"/></svg>',
 
-  // Material Design "expand_more" — filled downward chevron
+  
   chevron:
     '<svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>',
 
-  // Material Design "fullscreen" — four L-shaped corner arrows
+  
   fullscreen:
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
 
-  // Material Design "fullscreen_exit" — four inward L-shaped arrows
+  
   fullscreenExit:
     '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>',
 };
@@ -327,11 +327,11 @@ export function createControls(container, engine, emitter, options) {
   let isScrubbing = false;
   let isHoveringBar = false;
   let isMuted = false;
-  let preMuteVolume = 1; // level to restore on unmute
+  let preMuteVolume = 1; 
   let lastDuration = 0;
   let hideTimer = null;
 
-  // ── Mute icon helpers ──────────────────────────────────────────────────
+  
   const syncMuteIcon = (muted) => {
     isMuted = muted;
     volumeButton.innerHTML = muted ? ICONS.volumeMuted : ICONS.volume;
@@ -372,9 +372,9 @@ export function createControls(container, engine, emitter, options) {
   };
   const onVolumeInput = (event) => {
     const value = Number(event.target.value);
-    // Sync all sliders visually first
+    
     for (const slider of volumeSliders) slider.value = String(value);
-    // Dragging slider up from 0 while muted → auto-unmute
+    
     if (value > 0 && isMuted) {
       isMuted = false;
       syncMuteIcon(false);
@@ -384,18 +384,18 @@ export function createControls(container, engine, emitter, options) {
   const onVolumeToggleClick = () => {
     const willMute = !isMuted;
     if (willMute) {
-      // 1. Snapshot current slider value BEFORE anything changes the slider
+      
       preMuteVolume = Number(volumeSliders[0]?.value) || 1;
-      // 2. Update icon state
+      
       syncMuteIcon(true);
-      // 3. Tell engine (fires volumechange, but we won't move the slider)
+      
       engine.setVolume(0);
     } else {
-      // 1. Update icon state
+      
       syncMuteIcon(false);
-      // 2. Restore slider visually
+      
       for (const slider of volumeSliders) slider.value = String(preMuteVolume);
-      // 3. Tell engine
+      
       engine.setVolume(preMuteVolume);
     }
   };
@@ -417,7 +417,7 @@ export function createControls(container, engine, emitter, options) {
   };
   const onOutsideClick = (event) => {
     const path = event.composedPath();
-    // Volume popup no longer opens — only rate popup needs outside-click dismissal
+    
     if (!path.includes(rateButton) && !path.includes(ratePopup)) {
       ratePopup.classList.remove('open');
       rateButton.removeAttribute('data-open');
@@ -480,12 +480,12 @@ export function createControls(container, engine, emitter, options) {
       timeEl.textContent = `-${formatTime(duration - currentTime)}`;
     }),
     emitter.on('volumechange', ({ volume: currentVolume }) => {
-      // Only update the sliders here. Mute icon state is exclusively owned by
-      // syncMuteIcon() — driven by button click, slider drag, or
-      // controls.setMuted() from the player API.
-      // We do NOT use the engine's `muted` field here because our mute
-      // implementation sets volume=0 rather than video.muted=true, so the
-      // native element always reports muted:false even when we're "muted".
+      
+      
+      
+      
+      
+      
       if (!isMuted) {
         for (const slider of volumeSliders) slider.value = String(currentVolume);
       }

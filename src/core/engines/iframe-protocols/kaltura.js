@@ -102,7 +102,7 @@ export const KALTURA_PROTOCOL = {
 
           emitter.emit('ready');
 
-          // Flush any commands queued before initialization
+          
           for (const fn of queue) fn(kdp);
           queue = [];
         },
@@ -113,7 +113,7 @@ export const KALTURA_PROTOCOL = {
         pause: () => runOrQueue((p) => p.sendNotification('doPause')),
         seekTo: (seconds) => runOrQueue((p) => p.sendNotification('doSeek', seconds)),
         setVolume: (volume) => runOrQueue((p) => p.sendNotification('changeVolume', volume)),
-        setPlaybackRate: () => {}, // Not supported natively in KDP
+        setPlaybackRate: () => {}, 
         destroy: () => {
           if (kdp) {
             kdp.kUnbind('.uep');

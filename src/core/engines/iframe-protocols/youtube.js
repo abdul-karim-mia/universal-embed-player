@@ -1,16 +1,16 @@
-// YouTube IFrame Player API.
-// Reference: https://developers.google.com/youtube/iframe_api_reference
-//
-// An earlier version of this file hand-rolled the raw postMessage wire
-// protocol to avoid loading YouTube's ~15KB iframe_api script. That command
-// direction (parent → iframe) worked, but state feedback (iframe → parent —
-// onStateChange/infoDelivery) did not reliably arrive without the official
-// API bridging it, so the custom control bar's play icon and progress bar
-// never updated even though clicking play actually started the video. Cross-
-// checked against Mux's youtube-video-element (the implementation react-player
-// v3 delegates to, see plan.md §0.1): it always loads the real API for
-// exactly this reason. We do the same now — still lazy (only loaded when a
-// YouTube source actually mounts), but via the real, supported bridge.
+
+
+
+
+
+
+
+
+
+
+
+
+
 let apiPromise = null;
 
 function loadYouTubeApi() {
@@ -60,10 +60,10 @@ export const YOUTUBE_PROTOCOL = {
         events: {
           onReady: () => {
             emitter.emit('ready');
-            // PlayerOptions.autoplay/.muted (core/types.js) — previously only
-            // honored by the native <video> engine (engines/media-events.js).
-            // Mute before play since YouTube (like most browsers) only
-            // reliably allows autoplay without a user gesture when muted.
+            
+            
+            
+            
             if (options.muted) player.mute();
             if (options.autoplay) player.playVideo();
             progressTimer = setInterval(() => {
@@ -89,8 +89,8 @@ export const YOUTUBE_PROTOCOL = {
             });
           },
           onStateChange: (event) => {
-            // YouTube has no native single-video loop param — restart on
-            // 'ended' instead, same approach as Plyr's youtube plugin.
+            
+            
             if (event.data === 0 && options.loop) {
               player.seekTo(0, true);
               player.playVideo();

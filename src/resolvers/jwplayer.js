@@ -1,8 +1,8 @@
-// Embed parameter reference: https://developer.jwplayer.com/jw-player/docs/developer-guide/getting-started/add-an-html5-player/
-// Handles documented URL shapes:
-//   cdn.jwplayer.com/players/<mediaId>-<playerId>.html  (iframe)
-//   cdn.jwplayer.com/manifests/<mediaId>.m3u8           (HLS manifest, direct)
-// plus content.jwplatform.com equivalents for both.
+
+
+
+
+
 const JW_HOST_RE = /(^|\.)jwplayer\.com$|(^|\.)jwplatform\.com$/;
 const JW_IFRAME_PATH_RE = /^\/players\/([\w]+)-([\w]+)\.html$/;
 const JW_HLS_PATH_RE = /^\/manifests\/([\w]+)\.m3u8$/;

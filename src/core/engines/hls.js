@@ -1,8 +1,8 @@
-// HLS engine. Safari (and other browsers with native HLS support) plays the
-// manifest directly through the <video> element — zero dependency, zero
-// extra bytes downloaded. Everywhere else, `hls.js` is imported dynamically
-// (never a static top-level import — see rules.md §1a) so a consumer who
-// never touches an .m3u8 source never pays for it.
+
+
+
+
+
 import { applyMediaOptions, attachMediaElementEvents, createMediaControls } from './media-events.js';
 import { posterUrlFor } from '../lazy.js';
 
@@ -18,15 +18,15 @@ export async function createHlsEngine(container, resolvedSource, options, emitte
     const mod = await import('hls.js');
     HlsCtor = mod.default;
   } catch {
-    // hls.js optional peer dependency not installed or failed to load
+    
   }
 
   const isSafari = typeof navigator !== 'undefined' && 
     /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const canPlayNatively = video.canPlayType('application/vnd.apple.mpegurl') !== '';
 
-  // We only play natively on Safari where HLS is supported natively by the OS,
-  // or as a fallback if hls.js cannot be loaded.
+  
+  
   const preferNative = canPlayNatively && (isSafari || !HlsCtor || !HlsCtor.isSupported());
 
   if (preferNative) {

@@ -21,9 +21,55 @@ No proxy server. No client-side dependency except the two libraries
 | Category | Providers |
 |---|---|
 | Public social video | YouTube (standard, Shorts, unlisted, live), Vimeo (incl. private-hash links) |
-| Professional hosting | Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura |
+| Professional hosting | Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura, Gumlet, Jetpack VideoPress |
 | Cloud storage | Dropbox |
 | Raw infrastructure | HLS (`.m3u8`), DASH (`.mpd`), MP4/WebM/Ogg/MOV |
+
+Every provider above ships with a real, provider-specific protocol adapter
+(`src/core/engines/iframe-protocols/`) that drives this project's own
+control bar and interaction shield through that provider's actual JS SDK or
+documented postMessage API — not just a URL resolver — **and** genuinely
+hides the provider's native chrome, so the control bar you see is actually
+ours. A provider only earns a spot in this list once both are confirmed
+live in a real browser (`demo.html`): docs alone aren't enough, and a
+working command channel alone isn't enough either — see `plan.md` §0.6 for
+the full trail of adapters that looked correct on paper and weren't.
+
+**Deliberately not supported**, and why:
+
+- **Dailymotion** — its current embed system requires a per-integrator
+  Player ID configured in Dailymotion's own dashboard to hide the native
+  control bar/logo, so there's no URL-only, zero-setup way to produce a
+  brand-minimized embed (see `plan.md` §0.5).
+- **Panopto** — a resolver and adapter were built (`EmbedApi` constructor
+  confirmed via docs), but the script URL it depends on 404s in practice; no
+  working URL could be found.
+- **Spotlightr** — the JS API only works with a specific "advanced embed
+  code" snippet Spotlightr's dashboard generates per video, not a plain
+  iframe plus a separately-loaded script; live-verified as non-functional.
+- **Vidyard, Bunny.net Stream** — their command channels genuinely work
+  (play/pause/seek/volume/timeupdate all confirmed live), but neither
+  provider documents any URL parameter or data attribute to hide its native
+  control bar, and no client-side code can hide a cross-origin iframe's own
+  UI by any other means (same-origin policy — see `rules.md` §4.1). Their
+  native controls would always stay visible next to ours, so they don't meet
+  this project's bar even though the underlying integration works.
+- **Brightcove** — the only documented cross-origin postMessage mechanism
+  for its iframe embed is events-only (no command channel in), so there's
+  no way to drive our own control bar.
+- **vzaar** — its API documentation no longer exists independently
+  (`help.vzaar.com` now redirects to Dacast, which acquired vzaar in 2019);
+  the one recoverable example was a legacy toggle-only `playPause()` call
+  with no confirmed seek/volume/event names, too unreliable to build on.
+- **Loom, Hippo Video, Sendspark, Muse.ai/Skiv, ScreenPal, Bonjoro** — no
+  public JS SDK or postMessage control protocol found after real research;
+  these are iframe-only with no way to replace their native chrome.
+- **Publitio** — has a real but incomplete postMessage protocol (play/pause
+  only — no seek, no volume, no timeupdate/ready), not enough to drive a
+  meaningful control bar.
+
+See `plan.md` §0.6 for the full per-provider research writeup behind each of
+these calls.
 
 Mux, Bunny Stream, and Cloudflare Stream's own manifest URLs need no special
 resolver at all — paste the `.m3u8` directly and the generic HLS engine

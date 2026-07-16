@@ -1,7 +1,7 @@
-// DASH engine. No browser plays DASH natively, so `dash.js` is always
-// required for `.mpd` sources — but it's still an optional peer dependency,
-// dynamically imported only when a DASH source is actually resolved (see
-// rules.md §1a). A consumer who never uses DASH never downloads it.
+
+
+
+
 import { applyMediaOptions, attachMediaElementEvents, createMediaControls } from './media-events.js';
 import { posterUrlFor } from '../lazy.js';
 
@@ -14,10 +14,10 @@ export async function createDashEngine(container, resolvedSource, options, emitt
   let dashjs;
   try {
     const mod = await import('dashjs');
-    // dashjs ships only a UMD/CJS build (no ESM `exports` field), so where
-    // `MediaPlayer` ends up on the imported namespace varies by loader: some
-    // expose it directly, others nest it under `.default` or a named
-    // `.dashjs` export (e.g. jsdelivr's `+esm` transform does the latter).
+    
+    
+    
+    
     dashjs = mod.MediaPlayer ? mod : (mod.default?.MediaPlayer ? mod.default : mod.dashjs);
     if (!dashjs?.MediaPlayer) throw new Error('dashjs module has no MediaPlayer export');
   } catch {
@@ -42,12 +42,12 @@ export async function createDashEngine(container, resolvedSource, options, emitt
 
   container.append(video);
 
-  // dashjs manages this <video> element internally (ABR, buffer/catch-up
-  // logic) and expects control through its own player API rather than direct
-  // element manipulation — seeking, rate, and volume set on `video` directly
-  // can be silently overridden by dashjs on its next internal tick. play/pause
-  // stay on the raw element so autoplay-rejection promise handling (below)
-  // keeps working the same way every other engine reports it.
+  
+  
+  
+  
+  
+  
   const controls = createMediaControls(video, emitter, 'dash');
 
   return {

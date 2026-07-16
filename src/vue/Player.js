@@ -1,18 +1,18 @@
-// Vue 3 adapter. Plain render function (no SFC/.vue compile step needed).
-// Mounts in onMounted (client-side only).
-//
-// SEO note: the outer div below carries a real, server-renderable fallback
-// (poster link + optional JSON-LD) as its own Vue-owned children, while the
-// actual mount target passed to createPlayer is a separate, always-empty
-// *inner* div. This split matters: createPlayer mutates its container with
-// plain DOM calls (append/innerHTML), and if that container were the same
-// node Vue renders children into, the next render would try to reconcile
-// its vnodes against a subtree Vue no longer recognizes (createPlayer
-// already replaced it). Keeping createPlayer's target as a leaf div with no
-// Vue children sidesteps that entirely. The fallback is hidden once
-// `mounted` flips true — both it and the real player are absolutely
-// positioned over the same box, so leaving it up forever would permanently
-// cover the real player.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { createPlayer } from '../core/controller.js';
 import { resolveSource } from '../resolvers/index.js';

@@ -1,28 +1,32 @@
-// Iframe engine for cross-origin providers (YouTube, Vimeo, Wistia,
-// Cloudflare Stream). Cannot reach into the iframe's own DOM to strip vendor
-// chrome — that's blocked by same-origin policy, full stop (plan.md §7).
-// Where a real control bridge exists (YouTube's IFrame Player API, Vimeo's
-// Player SDK, Wistia's Channel API) this engine drives real
-// play/pause/seek/volume commands via `protocol.attach()` and marks itself
-// `controllable`; the interaction shield (core/ui/shield.js) and custom
-// control bar are only mounted by the controller when `controllable` is true
-// (rules.md §4.5) — providers without a protocol adapter (e.g. Cloudflare
-// Stream) keep their native controls visible so the user always has a way
-// to operate playback.
+
+
+
+
+
+
+
+
+
+
+
 import { YOUTUBE_PROTOCOL } from './iframe-protocols/youtube.js';
 import { VIMEO_PROTOCOL } from './iframe-protocols/vimeo.js';
 import { WISTIA_PROTOCOL } from './iframe-protocols/wistia.js';
 import { KALTURA_PROTOCOL } from './iframe-protocols/kaltura.js';
+import { GUMLET_PROTOCOL } from './iframe-protocols/gumlet.js';
+import { JETPACK_VIDEOPRESS_PROTOCOL } from './iframe-protocols/jetpack-videopress.js';
 
 const PROTOCOLS = {
   youtube: YOUTUBE_PROTOCOL,
   vimeo: VIMEO_PROTOCOL,
   wistia: WISTIA_PROTOCOL,
   kaltura: KALTURA_PROTOCOL,
+  gumlet: GUMLET_PROTOCOL,
+  'jetpack-videopress': JETPACK_VIDEOPRESS_PROTOCOL,
 };
 
-// Minimum sandbox set that still allows each provider's own scripts/fullscreen
-// to function (plan.md §11). No allow-top-navigation, no allow-popups.
+
+
 const SANDBOX = 'allow-scripts allow-same-origin allow-presentation allow-popups-to-escape-sandbox';
 
 function createDefaultIframe(resolvedSource, options, protocol) {
@@ -49,10 +53,10 @@ function createDefaultIframe(resolvedSource, options, protocol) {
 export async function createIframeEngine(container, resolvedSource, options, emitter) {
   const protocol = PROTOCOLS[resolvedSource.provider] ?? null;
 
-  // Wistia's real control bridge (see iframe-protocols/wistia.js) mounts a
-  // <div class="wistia_embed"> that its own script injects content into, not
-  // a plain cross-origin <iframe> — createElement lets a protocol override
-  // the default iframe when its provider's embed shape genuinely differs.
+  
+  
+  
+  
   const element = protocol?.createElement
     ? protocol.createElement(resolvedSource, options)
     : createDefaultIframe(resolvedSource, options, protocol);
@@ -73,17 +77,17 @@ export async function createIframeEngine(container, resolvedSource, options, emi
     };
   }
 
-  // resolvedSource is passed through for any protocol that needs the video
-  // ID (or other resolved fields) at attach-time rather than baked into a
-  // URL src — no current protocol needs it (YouTube/Vimeo both read it from
-  // buildSrc's embedUrl; Wistia reads it in createElement instead), kept for
-  // whichever provider needs it next.
+  
+  
+  
+  
+  
   const commands = await protocol.attach(element, emitter, options, resolvedSource);
 
   if (!commands) {
-    // API script failed to load (offline, blocked, CSP) — element still
-    // shows the provider's own native controls since we never claim
-    // `controllable`.
+    
+    
+    
     return {
       mediaElement: element,
       controllable: false,

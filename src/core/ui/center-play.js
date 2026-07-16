@@ -33,7 +33,7 @@ export function createCenterPlayButton(container, engine, emitter, options) {
 
   let isPlaying = false;
 
-  // Hover states: scale up slightly
+  
   const onMouseEnter = () => {
     btn.style.transform = isPlaying
       ? 'translate(-50%, -50%) scale(0.8)'

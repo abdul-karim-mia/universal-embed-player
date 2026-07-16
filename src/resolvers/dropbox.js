@@ -1,13 +1,13 @@
-// Handles dropbox.com/s/<id>/<name>?dl=0 and the newer /scl/fi/<id>/<name>?dl=0
-// share-link shapes. The dl=0 -> raw=1 rewrite is documented by Dropbox as the
-// supported way to get a direct, embeddable byte stream instead of the preview page.
-//
-// mimeType is set from the URL's own file extension (verified against a real
-// share link) because Dropbox's usercontent CDN mislabels the raw=1 response
-// as Content-Type: application/json even though the bytes are genuinely the
-// video — combined with the X-Content-Type-Options: nosniff header it also
-// sends, an unadorned `video.src` trusts that bogus type and refuses to play.
-// A <source type> (native.js) overrides it with the real type instead.
+
+
+
+
+
+
+
+
+
+
 const EXT_MIME_TYPES = {
   mp4: 'video/mp4',
   m4v: 'video/mp4',
