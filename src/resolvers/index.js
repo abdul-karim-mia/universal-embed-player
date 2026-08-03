@@ -8,6 +8,7 @@ import { resolve as kaltura } from './kaltura.js';
 import { resolve as gumlet } from './gumlet.js';
 import { resolve as jetpackVideopress } from './jetpack-videopress.js';
 import { resolve as dropbox } from './dropbox.js';
+import { resolve as gdrive } from './gdrive.js';
 import { resolve as direct } from './direct.js';
 
 // Host-specific resolvers run first; the extension-based `direct` resolver
@@ -23,6 +24,7 @@ export const RESOLVERS = [
   gumlet,
   jetpackVideopress,
   dropbox,
+  gdrive,
   direct,
 ];
 

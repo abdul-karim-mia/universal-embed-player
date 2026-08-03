@@ -63,6 +63,13 @@ const PROVIDER_POSTERS = {
     const partnerId = segments[segments.indexOf('partner_id') + 1];
     return `https://cdnsecakmi.kaltura.com/p/${partnerId}/thumbnail/entry_id/${id}/width/${targetWidth}`;
   },
+  // Undocumented — Google publishes no thumbnail API for hotlinked <img>
+  // use. Observed to work for "anyone with the link" files (redirects to a
+  // real image, verified live against a real Drive file); not guaranteed for
+  // every file (private sharing, or Drive not having generated a preview).
+  // `img.onerror` above already no-ops on failure, same as any other
+  // provider whose poster guess turns out wrong.
+  gdrive: (id, resolved, targetWidth) => `https://drive.google.com/thumbnail?id=${id}&sz=w${targetWidth}`,
   direct: (id, resolved) => {
     if (resolved?.src?.includes('/cc0-videos/flower.mp4')) {
       return 'https://images.unsplash.com/photo-1562690878-713c2f7375dd?auto=format&fit=crop&w=1200&q=80';

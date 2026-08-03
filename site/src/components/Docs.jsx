@@ -41,7 +41,7 @@ player.setVolume(0.5)`}</pre>
       </div>
 
       <h3>Using with a URL</h3>
-      <p>The library automatically detects the video source from the URL and selects the appropriate playback engine. Supported sources include YouTube, Vimeo, Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura, Dropbox, HLS, DASH, and direct MP4/WebM files.</p>
+      <p>The library automatically detects the video source from the URL and selects the appropriate playback engine. Supported sources include YouTube, Vimeo, Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura, Gumlet, Jetpack VideoPress, Dropbox, Google Drive, HLS, DASH, and direct MP4/WebM files.</p>
 
       <div className="note-callout">
         <div className="note-callout-title">No Backend Required</div>
@@ -150,7 +150,7 @@ if (result) {
   providers: () => (
     <div className="docs-article">
       <h2>Provider Guides</h2>
-      <p>UEP supports 11 video providers out of the box. Each provider is handled by a dedicated resolver module that extracts the playable source and selects the appropriate engine.</p>
+      <p>UEP supports 12 video providers out of the box (11 with a real protocol adapter, plus Google Drive's uncontrolled iframe fallback below). Each provider is handled by a dedicated resolver module that extracts the playable source and selects the appropriate engine.</p>
 
       <h3>Iframe-Based Providers</h3>
 
@@ -178,6 +178,15 @@ if (result) {
 
       <h4>Kaltura</h4>
       <p>Supports <code>{'cdnapi.kaltura.com/p/{pid}/sp/{sp}/embedIframeJs/uiconf_id/{uid}/partner_id/{pid}?...'}</code> URLs. Dynamic player configuration via postMessage.</p>
+
+      <h3>Uncontrolled Iframe Provider</h3>
+
+      <h4>Google Drive</h4>
+      <p>Supports <code>{'drive.google.com/file/d/{id}/...'}</code>, <code>{'open?id={id}'}</code>, and <code>{'uc?id={id}'}</code> share links, plus the <code>docs.google.com</code> mirror. Resolves to Drive's own <code>/preview</code> iframe &mdash; the same UI Drive's web app itself uses.</p>
+      <div className="note-callout">
+        <div className="note-callout-title">No Control Channel</div>
+        <p>Google publishes no postMessage API or JS SDK for this iframe, so unlike every provider above there is no protocol adapter for it, and none is possible. <code>play()</code> / <code>pause()</code> / <code>seekTo()</code> / <code>setVolume()</code> are no-ops for a Drive source &mdash; it mounts uncontrolled (<code>controllable: false</code>) and shows Drive's native chrome exactly as-is. No autoplay parameter is set, since Google documents none. Marked <code>stability: 'experimental'</code>; light-mode's poster uses an undocumented, best-effort thumbnail endpoint that isn't guaranteed for every file. A prior native-<code>&lt;video&gt;</code> approach to Drive support was tried and reverted (modern Drive share links commonly hang on <code>buffering</code>) &mdash; this iframe-based approach avoids that failure mode at the cost of control-bar integration.</p>
+      </div>
 
       <h3>Direct Media Providers</h3>
 
@@ -461,7 +470,10 @@ customElements.define('my-video', UepPlayerElement)`}</pre>
 │   ├── fastpix.js
 │   ├── jwplayer.js
 │   ├── kaltura.js
+│   ├── gumlet.js
+│   ├── jetpack-videopress.js
 │   ├── dropbox.js
+│   ├── gdrive.js       # Uncontrolled — no protocol adapter exists
 │   └── direct.js       # Extension fallback
 ├── react/              # React adapter
 ├── vue/                # Vue 3 adapter
@@ -481,7 +493,8 @@ customElements.define('my-video', UepPlayerElement)`}</pre>
       <table>
         <thead><tr><th>Engine</th><th>Providers</th><th>Control Mechanism</th></tr></thead>
         <tbody>
-          <tr><td>iframe</td><td>YouTube, Vimeo, Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura</td><td>postMessage + iframe API</td></tr>
+          <tr><td>iframe</td><td>YouTube, Vimeo, Wistia, Cloudflare Stream, FastPix, JW Player, Kaltura, Gumlet, Jetpack VideoPress</td><td>postMessage + iframe API</td></tr>
+          <tr><td>iframe (uncontrolled)</td><td>Google Drive</td><td>None &mdash; no postMessage API exists; native provider chrome only, no unified control bar</td></tr>
           <tr><td>native</td><td>MP4, WebM, Dropbox</td><td>HTMLMediaElement API</td></tr>
           <tr><td>hls</td><td>.m3u8 URLs</td><td>Safari native + hls.js</td></tr>
           <tr><td>dash</td><td>.mpd URLs</td><td>dashjs</td></tr>

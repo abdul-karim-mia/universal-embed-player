@@ -35,6 +35,13 @@ live in a real browser (`demo.html`): docs alone aren't enough, and a
 working command channel alone isn't enough either — see `plan.md` §0.6 for
 the full trail of adapters that looked correct on paper and weren't.
 
+**Google Drive is not in this table** even though `resolveSource()` does
+resolve it and `createPlayer` does play it — it fails the "both bars" test
+above (no protocol adapter exists, and none can: Google publishes no
+postMessage API for its preview iframe). See
+["Playable, but not controllable: Google Drive"](#playable-but-not-controllable-google-drive)
+below for exactly what you get instead.
+
 **Deliberately not supported**, and why:
 
 - **Dailymotion** — its current embed system requires a per-integrator
@@ -74,6 +81,46 @@ these calls.
 Mux, Bunny Stream, and Cloudflare Stream's own manifest URLs need no special
 resolver at all — paste the `.m3u8` directly and the generic HLS engine
 handles it.
+
+### Playable, but not controllable: Google Drive
+
+Drive share links (`drive.google.com/file/d/...`, `/open?id=...`,
+`docs.google.com/file/d/...`) **do** resolve and play — via `resolveSource()`
+returning a real `gdrive`-provider `ResolvedSource` and `createPlayer`
+mounting Drive's own `/preview` iframe, the same UI Drive's own web app uses.
+This is a deliberately different, weaker guarantee than every provider in
+the table above, spelled out here rather than folded into it (rules.md §8):
+
+- **No unified control bar, no interaction shield, no command channel.**
+  `play()`/`pause()`/`seekTo()`/`setVolume()`/`setPlaybackRate()` are all
+  no-ops for a Drive source — Google publishes no postMessage API or JS SDK
+  for this iframe, so there's nothing for a protocol adapter to drive. You
+  get Drive's own native player chrome, unmodified, exactly as if you'd
+  embedded the raw iframe yourself. (`ResolvedSource.provider === 'gdrive'`
+  mounts through the same no-adapter fallback path documented in
+  `src/core/engines/iframe.js` — `controllable: false`.)
+- **No autoplay parameter.** Every other iframe provider in this README
+  cites the specific documentation URL for the params it sets (rules.md
+  §4.2). Google documents none for the `/preview` endpoint, so none is
+  guessed — unlike the table above, a Drive source cannot be started
+  programmatically or via `light`-mode's usual click-to-autoplay pattern;
+  the visitor plays it from Drive's own UI.
+- **Light-mode poster is best-effort.** `https://drive.google.com/thumbnail?
+  id={id}` is an undocumented pattern — verified live to redirect to a real
+  image for a public "anyone with the link" file, but Google offers no
+  guarantee: it can fail for files Drive hasn't generated a preview for, or
+  that aren't shared publicly. It fails silently to a plain background, the
+  same as any other provider's poster guess turning out wrong.
+
+A prior attempt at Drive support used a completely different approach —
+native `<video>` playback of a rewritten raw-bytes URL, the same shape as
+the Dropbox resolver above — and was removed (see `plan.md` §8) because
+Drive's modern share links commonly point at non-"faststart" MP4s that hang
+indefinitely on `buffering` in-browser regardless of resolver correctness.
+The `/preview`-iframe approach here sidesteps that specific failure mode
+entirely (Drive's own preview player handles decoding and streaming, not a
+bare `<video>` tag), at the cost of the control-bar integration every other
+provider in this README has.
 
 ## Install
 

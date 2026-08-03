@@ -6,6 +6,7 @@ const providers = [
   { name: 'HLS', color: 'var(--accent)', bg: 'rgba(255,255,255,0.05)', icon: 'H' },
   { name: 'DASH', color: 'var(--primary)', bg: 'rgba(255,255,255,0.05)', icon: 'D' },
   { name: 'Dropbox', color: '#0087ff', bg: 'rgba(0,135,255,0.1)', icon: 'D' },
+  { name: 'Google Drive', color: '#00ac47', bg: 'rgba(0,172,71,0.1)', icon: 'GD' },
   { name: 'Wistia', color: 'var(--accent)', bg: 'rgba(255,255,255,0.05)', icon: 'W' },
   { name: 'Cloudflare', color: '#ef8200', bg: 'rgba(239,130,0,0.1)', icon: 'CS' },
   { name: 'FastPix', color: 'var(--primary)', bg: 'rgba(255,255,255,0.05)', icon: 'FP' },
@@ -246,7 +247,7 @@ export function Home({ onNavigate }) {
               <div key={p.name} className="provider-card glass hover-glow">
                 <div className="provider-icon" style={{ background: p.bg, color: p.color }} aria-hidden="true">{p.icon}</div>
                 <div className="provider-name">{p.name}</div>
-                <div className="provider-desc">{p.name === 'YouTube' ? 'Full postMessage control' : p.name === 'Vimeo' ? 'Private video support' : p.name === 'HLS' ? 'Native + hls.js fallback' : p.name === 'DASH' ? 'Dynamic dashjs import' : p.name === 'Dropbox' ? 'Direct MP4 resolution' : p.name === 'Wistia' ? 'postMessage API' : p.name === 'Cloudflare' ? 'Signed URLs' : p.name === 'FastPix' ? 'Performance-first' : p.name === 'JW Player' ? 'Cloud-hosted embed' : p.name === 'Kaltura' ? 'Dynamic config' : p.name === 'MP4/WebM' ? 'Direct video element' : 'Opt-in API fallback'}</div>
+                <div className="provider-desc">{p.name === 'YouTube' ? 'Full postMessage control' : p.name === 'Vimeo' ? 'Private video support' : p.name === 'HLS' ? 'Native + hls.js fallback' : p.name === 'DASH' ? 'Dynamic dashjs import' : p.name === 'Dropbox' ? 'Direct MP4 resolution' : p.name === 'Google Drive' ? 'Native preview UI (uncontrolled)' : p.name === 'Wistia' ? 'postMessage API' : p.name === 'Cloudflare' ? 'Signed URLs' : p.name === 'FastPix' ? 'Performance-first' : p.name === 'JW Player' ? 'Cloud-hosted embed' : p.name === 'Kaltura' ? 'Dynamic config' : p.name === 'MP4/WebM' ? 'Direct video element' : 'Opt-in API fallback'}</div>
               </div>
             ))}
           </div>

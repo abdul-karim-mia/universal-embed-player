@@ -448,6 +448,57 @@ test('dropbox: newer /scl/fi/ share link shape', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Google Drive — resolvable and playable, but uncontrolled (no protocol
+// adapter exists; Google publishes no postMessage API for this iframe).
+// See README's "Playable-but-uncontrolled" section and plan.md §8.
+// ---------------------------------------------------------------------------
+test('gdrive: /file/d/ share link resolves to the /preview iframe', () => {
+  const r = resolveSource('https://drive.google.com/file/d/1a2B3c4D5e6F7g8H9iJ0kLmNoPqRsTuVw/view?usp=sharing');
+  assert.equal(r.provider, 'gdrive');
+  assert.equal(r.type, 'iframe');
+  assert.equal(r.id, '1a2B3c4D5e6F7g8H9iJ0kLmNoPqRsTuVw');
+  assert.equal(r.embedUrl, 'https://drive.google.com/file/d/1a2B3c4D5e6F7g8H9iJ0kLmNoPqRsTuVw/preview');
+  assert.equal(r.stability, 'experimental');
+});
+
+test('gdrive: open?id= share link shape', () => {
+  const r = resolveSource('https://drive.google.com/open?id=1a2B3c4D5e6F7g8H9iJ0kLmNoPqRsTuVw');
+  assert.equal(r.provider, 'gdrive');
+  assert.equal(r.embedUrl, 'https://drive.google.com/file/d/1a2B3c4D5e6F7g8H9iJ0kLmNoPqRsTuVw/preview');
+});
+
+test('gdrive: uc?id= share link shape', () => {
+  const r = resolveSource('https://drive.google.com/uc?id=1a2B3c4D5e6F7g8H9iJ0kLmNoPqRsTuVw&export=download');
+  assert.equal(r.provider, 'gdrive');
+  assert.equal(r.embedUrl, 'https://drive.google.com/file/d/1a2B3c4D5e6F7g8H9iJ0kLmNoPqRsTuVw/preview');
+});
+
+test('gdrive: docs.google.com/file/d/ mirrors drive.google.com', () => {
+  const r = resolveSource('https://docs.google.com/file/d/1a2B3c4D5e6F7g8H9iJ0kLmNoPqRsTuVw/edit');
+  assert.equal(r.provider, 'gdrive');
+});
+
+test('gdrive: no autoplay param is ever set (none is documented)', () => {
+  const r = resolveSource('https://drive.google.com/file/d/1a2B3c4D5e6F7g8H9iJ0kLmNoPqRsTuVw/view');
+  assert.doesNotMatch(r.embedUrl, /autoplay/);
+});
+
+test('gdrive: rejects a too-short id rather than guessing', () => {
+  const r = resolveSource('https://drive.google.com/file/d/abc/view');
+  assert.equal(r, null);
+});
+
+test('gdrive: rejects an injection-shaped id instead of interpolating it', () => {
+  const r = resolveSource('https://drive.google.com/open?id=%22%3E%3Cscript%3E');
+  assert.equal(r, null);
+});
+
+test('gdrive: unrelated Google Drive URLs (e.g. a folder) are unresolved', () => {
+  const r = resolveSource('https://drive.google.com/drive/folders/1a2B3c4D5e6F7g8H9iJ0kLmNoPqRsTuVw');
+  assert.equal(r, null);
+});
+
+// ---------------------------------------------------------------------------
 // Raw infrastructure: direct MP4/WebM, HLS, DASH
 // ---------------------------------------------------------------------------
 test('direct: plain .mp4 file', () => {
