@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "npm --prefix .. run prepublishOnly",
     "dev": "vite",
+    "prebuild": "npm --prefix .. run prepublishOnly",
     "build": "vite build",
     "preview": "vite preview"
   },
