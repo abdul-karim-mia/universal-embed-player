@@ -12,6 +12,7 @@ const PROVIDERS = [
   { id: 'hls', title: 'HLS', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', stability: 'stable', note: 'Requires hls.js on non-Safari browsers.' },
   { id: 'dash', title: 'DASH', url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd', stability: 'stable', note: 'Requires dash.js.' },
   { id: 'dropbox', title: 'Dropbox', url: 'https://www.dropbox.com/scl/fi/s63p1hburnln3wcw45pil/sample-mp4-file.mp4?rlkey=g04k3hvvvz15zcyl5b9j42jc4&st=pmwequuw&dl=0', stability: 'stable' },
+  { id: 'gdrive', title: 'Google Drive', url: 'https://drive.google.com/file/d/1jPdaM8MUydZ1uauQMZrgKZQhI7eeP5Ik/view?usp=sharing', stability: 'experimental', note: 'Uncontrolled — no unified control bar or command channel exists for this iframe; Drive\'s native player UI only.' },
 ];
 
 function hexToRgba(hex, opacity) {
